@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The Board — for NTU students</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --pink:#E6007E;
+    --pink-dark:#B5005F;
+    --ink:#14151A;
+    --grey-700:#4A4C56;
+    --grey-100:#F3F3F6;
+    --grey-200:#E7E7EC;
+    --white:#FFFFFF;
+    --radius:14px;
+    box-sizing:border-box;
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  html,body{height:100%;}
+  body{
+    margin:0; background:var(--white); color:var(--ink);
+    font-family:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3{font-family:'Sora', 'Inter', sans-serif; margin:0;}
+  a{color:inherit;}
+  button{font-family:inherit;}
+
+  header.top{
+    position:sticky; top:0; z-index:30;
+    background:rgba(255,255,255,0.92); backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--grey-200);
+    padding:calc(env(safe-area-inset-top,0px) + 14px) 20px 14px;
+  }
+  .top-inner{max-width:1080px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; gap:16px;}
+  .logo{display:flex; align-items:center; gap:9px; font-weight:800; font-size:1.05rem;}
+  .logo .dot{width:10px; height:10px; border-radius:50%; background:var(--pink);}
+
+  .cta-btn{
+    background:var(--pink); color:var(--white); border:none; text-decoration:none; font-weight:700;
+    font-size:0.9rem; padding:12px 20px; border-radius:999px; cursor:pointer;
+    transition:background 0.15s ease;
+  }
+  .cta-btn:hover{background:var(--pink-dark);}
+  .btn-secondary{
+    background:var(--white); border:1.5px solid var(--grey-200); color:var(--ink); text-decoration:none;
+    font-weight:700; font-size:0.9rem; padding:11px 20px; border-radius:999px; cursor:pointer;
+  }
+  .btn-secondary:hover{border-color:var(--pink);}
+
+  .hero{padding:72px 20px 56px; max-width:1080px; margin:0 auto; text-align:left;}
+  .hero .eyebrow{
+    display:inline-block; background:#FCE4F0; color:var(--pink-dark); font-weight:700;
+    font-size:0.78rem; padding:6px 13px; border-radius:999px; margin-bottom:18px;
+  }
+  .hero h1{font-size:clamp(2.1rem, 6vw, 3.4rem); line-height:1.12; font-weight:800; max-width:16ch; letter-spacing:-0.01em;}
+  .hero p{font-size:1.08rem; color:var(--grey-700); max-width:50ch; margin:18px 0 28px; line-height:1.6;}
+  .hero-actions{display:flex; flex-wrap:wrap; gap:12px;}
+
+  .about{padding:20px 20px 64px; max-width:1080px; margin:0 auto;}
+  .about-grid{display:grid; grid-template-columns:1fr; gap:18px;}
+  @media(min-width:760px){.about-grid{grid-template-columns:repeat(3,1fr);}}
+  .about-card{
+    border:1px solid var(--grey-200); border-radius:var(--radius); padding:24px;
+    background:var(--grey-100);
+  }
+  .about-card h3{font-size:1.05rem; font-weight:700; margin-bottom:8px;}
+  .about-card p{font-size:0.9rem; color:var(--grey-700); line-height:1.55; margin:0;}
+
+  .note-strip{max-width:1080px; margin:0 auto 64px; padding:0 20px;}
+  .note-strip .box{
+    border:1.5px dashed var(--grey-200); border-radius:var(--radius); padding:22px 24px;
+    font-size:0.92rem; color:var(--grey-700); line-height:1.6;
+  }
+  .note-strip .box strong{color:var(--ink);}
+
+  footer{border-top:1px solid var(--grey-200); padding:34px 20px calc(30px + env(safe-area-inset-bottom,0px));}
+  .footer-inner{max-width:1080px; margin:0 auto;}
+  footer .disclaimer{font-size:0.82rem; color:var(--grey-700); max-width:50ch; line-height:1.55;}
+  footer .copy{font-size:0.78rem; color:#9A9BA6; margin-top:14px;}
+
+  /* ---------- modal ---------- */
+  .modal-overlay{
+    display:none; position:fixed; inset:0; background:rgba(20,21,26,0.55); z-index:100;
+    align-items:flex-start; justify-content:center; padding:24px 16px;
+    overflow-y:auto;
+  }
+  .modal-overlay.show{display:flex;}
+  .modal{
+    background:var(--white); border-radius:18px; max-width:480px; width:100%;
+    margin-top:calc(env(safe-area-inset-top,0px) + 30px);
+    padding:28px 26px 26px; position:relative;
+  }
+  .modal-close{
+    position:absolute; top:16px; right:16px; background:var(--grey-100); border:none;
+    width:32px; height:32px; border-radius:50%; font-size:1.1rem; cursor:pointer; color:var(--grey-700);
+  }
+  .modal h2{font-size:1.3rem; font-weight:800; margin-bottom:6px;}
+  .modal .sub{font-size:0.88rem; color:var(--grey-700); margin-bottom:20px;}
+
+  .choice-row{display:flex; flex-direction:column; gap:12px;}
+  .choice-btn{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    border:1.5px solid var(--grey-200); border-radius:12px; padding:16px 18px;
+    background:var(--white); cursor:pointer; text-align:left; font-family:inherit;
+  }
+  .choice-btn:hover{border-color:var(--pink);}
+  .choice-btn .ct{font-weight:700; font-size:0.95rem;}
+  .choice-btn .cd{font-size:0.8rem; color:var(--grey-700); margin-top:2px;}
+  .choice-btn .arrow{color:var(--pink); font-weight:700;}
+
+  form.reg-form{display:flex; flex-direction:column; gap:14px;}
+  .field{display:flex; flex-direction:column; gap:6px;}
+  .field label{font-size:0.83rem; font-weight:700;}
+  .field input, .field textarea{
+    font-family:inherit; font-size:0.94rem; padding:10px 12px; border:1.5px solid var(--grey-200);
+    border-radius:9px; background:var(--white); color:var(--ink); resize:vertical; width:100%;
+  }
+  .field input:focus, .field textarea:focus{outline:none; border-color:var(--pink);}
+  .two-col{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+
+  .back-link{background:none; border:none; color:var(--grey-700); font-size:0.82rem; font-weight:600; cursor:pointer; padding:0; text-align:left; margin-bottom:4px;}
+  .back-link:hover{color:var(--pink-dark);}
+
+  .success-state{display:none; text-align:center; padding:10px 0 4px;}
+  .success-state.show{display:block;}
+  .success-state .tick{
+    width:52px; height:52px; border-radius:50%; background:#EAF7EE; color:#1E7B3B;
+    display:flex; align-items:center; justify-content:center; font-size:1.6rem; margin:0 auto 14px;
+  }
+  .success-state h3{font-size:1.1rem; font-weight:800; margin-bottom:6px;}
+  .success-state p{font-size:0.88rem; color:var(--grey-700); margin:0 0 18px; line-height:1.5;}
+
+  @media(prefers-reduced-motion:reduce){ html{scroll-behavior:auto;} }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-inner">
+    <div class="logo"><span class="dot"></span>the Board</div>
+    <button class="cta-btn" id="open-register">Register</button>
+  </div>
+</header>
+
+<section class="hero">
+  <span class="eyebrow">Demo — made by NTU students</span>
+  <h1>One site for everything NTU students are running.</h1>
+  <p>Student-run businesses, societies, and official announcements — all in one place, instead of five different Instagram pages and group chats.</p>
+  <div class="hero-actions">
+    <button class="cta-btn" id="open-register-2">Register your business or society</button>
+  </div>
+</section>
+
+<section class="about">
+  <div class="about-grid">
+    <div class="about-card">
+      <h3>Student Services</h3>
+      <p>Hair, nails, tutoring, repairs — anything a student is running on the side, listed with real contact details.</p>
+    </div>
+    <div class="about-card">
+      <h3>Societies</h3>
+      <p>What's on, when it meets, and how to join.</p>
+    </div>
+    <div class="about-card">
+      <h3>Official Adverts</h3>
+      <p>Space for NTU and NTSU announcements and notices.</p>
+    </div>
+  </div>
+</section>
+
+<section class="note-strip">
+  <div class="box">
+    <strong>This is a demo.</strong> It's here to show how the Board could work — press "Register" to see the sign-up flow for a business or society. Nothing is live yet.
+  </div>
+</section>
+
+<footer>
+  <div class="footer-inner">
+    <p class="disclaimer">The Board is a listings platform only. We don't vet, endorse, or take responsibility for the quality of anyone's product or service.</p>
+    <p class="copy">Not an official NTU or NTSU service.</p>
+  </div>
+</footer>
+
+<!-- ---------- registration modal ---------- -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <button class="modal-close" id="modal-close">✕</button>
+
+    <div id="step-choice">
+      <h2>Register on the Board</h2>
+      <p class="sub">What would you like to list?</p>
+      <div class="choice-row">
+        <button class="choice-btn" data-choice="business">
+          <div>
+            <div class="ct">A business</div>
+            <div class="cd">Hair, nails, tutoring, repairs, or anything else</div>
+          </div>
+          <span class="arrow">→</span>
+        </button>
+        <button class="choice-btn" data-choice="society">
+          <div>
+            <div class="ct">A society</div>
+            <div class="cd">Clubs, groups, and regular meet-ups</div>
+          </div>
+          <span class="arrow">→</span>
+        </button>
+      </div>
+    </div>
+
+    <div id="step-business" style="display:none;">
+      <button class="back-link" data-back>← Back</button>
+      <h2>Register a business</h2>
+      <p class="sub">Tell us about what you offer.</p>
+      <form class="reg-form" id="business-form">
+        <div class="field">
+          <label for="b-name">Business name</label>
+          <input id="b-name" type="text" required>
+        </div>
+        <div class="field">
+          <label for="b-what">What you offer</label>
+          <input id="b-what" type="text" placeholder="e.g. haircuts, tutoring, nail sets" required>
+        </div>
+        <div class="two-col">
+          <div class="field">
+            <label for="b-price">Price</label>
+            <input id="b-price" type="text" placeholder="e.g. from £10">
+          </div>
+          <div class="field">
+            <label for="b-location">Location</label>
+            <input id="b-location" type="text" placeholder="e.g. Clifton campus">
+          </div>
+        </div>
+        <div class="field">
+          <label for="b-desc">Description</label>
+          <textarea id="b-desc" rows="3" placeholder="Anything else people should know"></textarea>
+        </div>
+        <div class="field">
+          <label for="b-contact">Contact (email, phone, or social handle)</label>
+          <input id="b-contact" type="text" required>
+        </div>
+        <button type="submit" class="cta-btn">Submit listing</button>
+      </form>
+    </div>
+
+    <div id="step-society" style="display:none;">
+      <button class="back-link" data-back>← Back</button>
+      <h2>Register a society</h2>
+      <p class="sub">Tell us about your society.</p>
+      <form class="reg-form" id="society-form">
+        <div class="field">
+          <label for="s-name">Society name</label>
+          <input id="s-name" type="text" required>
+        </div>
+        <div class="field">
+          <label for="s-what">What it's about</label>
+          <input id="s-what" type="text" required>
+        </div>
+        <div class="field">
+          <label for="s-meet">Where and when you meet</label>
+          <input id="s-meet" type="text" placeholder="e.g. Thursdays 6pm, City campus">
+        </div>
+        <div class="field">
+          <label for="s-desc">Description</label>
+          <textarea id="s-desc" rows="3" placeholder="Anything else people should know"></textarea>
+        </div>
+        <div class="field">
+          <label for="s-contact">Contact (email, phone, or social handle)</label>
+          <input id="s-contact" type="text" required>
+        </div>
+        <button type="submit" class="cta-btn">Submit listing</button>
+      </form>
+    </div>
+
+    <div class="success-state" id="step-success">
+      <div class="tick">✓</div>
+      <h3>You're registered</h3>
+      <p>Thanks — your listing has been submitted. This is a demo, so nothing is published live yet, but this is exactly the flow real sign-ups will follow.</p>
+      <button class="cta-btn" id="success-close">Done</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const overlay = document.getElementById('modal-overlay');
+  const stepChoice = document.getElementById('step-choice');
+  const stepBusiness = document.getElementById('step-business');
+  const stepSociety = document.getElementById('step-society');
+  const stepSuccess = document.getElementById('step-success');
+
+  function openModal(){
+    overlay.classList.add('show');
+    showStep('choice');
+  }
+  function closeModal(){
+    overlay.classList.remove('show');
+  }
+  function showStep(name){
+    stepChoice.style.display = name === 'choice' ? 'block' : 'none';
+    stepBusiness.style.display = name === 'business' ? 'block' : 'none';
+    stepSociety.style.display = name === 'society' ? 'block' : 'none';
+    stepSuccess.classList.toggle('show', name === 'success');
+  }
+
+  document.getElementById('open-register').addEventListener('click', openModal);
+  document.getElementById('open-register-2').addEventListener('click', openModal);
+  document.getElementById('modal-close').addEventListener('click', closeModal);
+  document.getElementById('success-close').addEventListener('click', closeModal);
+  overlay.addEventListener('click', e => { if(e.target === overlay) closeModal(); });
+  document.addEventListener('keydown', e => { if(e.key === 'Escape') closeModal(); });
+
+  document.querySelectorAll('.choice-btn').forEach(btn => {
+    btn.addEventListener('click', () => showStep(btn.dataset.choice));
+  });
+  document.querySelectorAll('[data-back]').forEach(btn => {
+    btn.addEventListener('click', () => showStep('choice'));
+  });
+
+  document.getElementById('business-form').addEventListener('submit', function(e){
+    e.preventDefault();
+    // Demo only — no backend yet. Wire this up to a real server/database
+    // before going live so listings are actually stored and shared.
+    this.reset();
+    showStep('success');
+  });
+
+  document.getElementById('society-form').addEventListener('submit', function(e){
+    e.preventDefault();
+    this.reset();
+    showStep('success');
+  });
+</script>
+
+</body>
+</html>
