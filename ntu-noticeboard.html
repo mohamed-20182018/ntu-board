@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The Board — for NTU students</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --pink:#F0529E;
+    --pink-dark:#C83E80;
+    --pink-tint:#FDEBF4;
+    --ink:#0F1012;
+    --grey-700:#55575F;
+    --grey-100:#F5F5F7;
+    --grey-200:#E7E7EA;
+    --white:#FFFFFF;
+    --radius:20px;
+    box-sizing:border-box;
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  html,body{height:100%;}
+  body{
+    margin:0; background:var(--white); color:var(--ink);
+    font-family:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3{font-family:'Sora', 'Inter', sans-serif; margin:0;}
+  a{color:inherit;}
+  button{font-family:inherit;}
+  :focus-visible{outline:2.5px solid var(--pink); outline-offset:3px;}
+
+  /* ---------- header ---------- */
+  header.top{
+    position:sticky; top:0; z-index:30;
+    background:rgba(255,255,255,0.88); backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--grey-200);
+    padding:calc(env(safe-area-inset-top,0px) + 16px) 28px 16px;
+  }
+  .top-inner{max-width:1280px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; gap:20px;}
+  .logo{display:flex; align-items:center; gap:10px; font-weight:800; font-size:1.2rem; letter-spacing:-0.01em;}
+  .logo .dot{width:11px; height:11px; border-radius:50%; background:var(--pink);}
+  nav.top-links{display:none; gap:28px; font-weight:600; font-size:0.95rem; color:var(--grey-700);}
+  nav.top-links a:hover{color:var(--ink);}
+  @media(min-width:780px){nav.top-links{display:flex;}}
+
+  .cta-btn{
+    background:var(--ink); color:var(--white); border:none; text-decoration:none; font-weight:700;
+    font-size:0.95rem; padding:14px 24px; border-radius:999px; cursor:pointer;
+    transition:transform 0.15s ease, background 0.15s ease;
+  }
+  .cta-btn:hover{background:var(--pink); transform:translateY(-1px);}
+  .btn-secondary{
+    background:var(--white); border:1.5px solid var(--grey-200); color:var(--ink); text-decoration:none;
+    font-weight:700; font-size:0.95rem; padding:13px 24px; border-radius:999px; cursor:pointer;
+  }
+  .btn-secondary:hover{border-color:var(--pink); color:var(--pink-dark);}
+
+  /* ---------- hero ---------- */
+  .hero{
+    position:relative; overflow:hidden;
+    padding:96px 28px 88px; max-width:1280px; margin:0 auto;
+  }
+  .hero-blob{
+    position:absolute; top:-180px; right:-220px; width:640px; height:640px; border-radius:50%;
+    background:radial-gradient(circle at 35% 35%, var(--pink-tint), transparent 70%);
+    z-index:0; pointer-events:none;
+  }
+  .hero-inner{position:relative; z-index:1; max-width:780px;}
+  .hero h1{
+    font-size:clamp(2.6rem, 7vw, 5.4rem); line-height:1.02; font-weight:800;
+    letter-spacing:-0.025em; max-width:14ch;
+  }
+  .hero p{font-size:1.2rem; color:var(--grey-700); max-width:46ch; margin:26px 0 36px; line-height:1.6;}
+  .hero-actions{display:flex; flex-wrap:wrap; gap:14px;}
+
+  /* ---------- about strip ---------- */
+  .about{padding:0 28px 100px; max-width:1280px; margin:0 auto;}
+  .about-grid{display:grid; grid-template-columns:1fr; gap:20px;}
+  @media(min-width:860px){.about-grid{grid-template-columns:1.3fr 1fr 1fr;}}
+  .about-tile{border-radius:28px; padding:40px 34px; min-height:220px; display:flex; flex-direction:column; justify-content:space-between;}
+  .about-tile h3{font-size:1.5rem; font-weight:700; letter-spacing:-0.01em;}
+  .about-tile p{font-size:1rem; line-height:1.6; margin:16px 0 0;}
+  .about-tile.dark{background:var(--ink); color:var(--white);}
+  .about-tile.dark p{color:#C9CACE;}
+  .about-tile.pink{background:var(--pink); color:var(--white);}
+  .about-tile.pink p{color:#FFF1F8;}
+  .about-tile.light{background:var(--grey-100); color:var(--ink);}
+  .about-tile.light p{color:var(--grey-700);}
+
+  /* ---------- listing sections ---------- */
+  section.block{padding:84px 28px;}
+  section.block.grey{background:var(--grey-100);}
+  .block-inner.wide{max-width:1280px; margin:0 auto;}
+  .block-head{margin-bottom:40px; display:flex; align-items:flex-end; justify-content:space-between; gap:20px; flex-wrap:wrap;}
+  .block-head h2{font-size:clamp(1.8rem, 4vw, 2.6rem); font-weight:800; letter-spacing:-0.015em;}
+  .block-head p{font-size:1.05rem; color:var(--grey-700); margin:12px 0 0; line-height:1.6; max-width:50ch;}
+
+  .grid{display:grid; grid-template-columns:1fr; gap:22px;}
+  @media(min-width:720px){.grid{grid-template-columns:1fr 1fr;}}
+
+  .card{
+    position:relative;
+    background:var(--white); border:1.5px solid var(--grey-200); border-radius:var(--radius);
+    padding:30px; display:flex; flex-direction:column; gap:10px;
+    transition:border-color 0.15s ease;
+  }
+  .card:hover{border-color:var(--pink);}
+  .card .tag{
+    display:inline-flex; align-self:flex-start; font-size:0.78rem; font-weight:700; color:var(--pink-dark);
+    background:var(--pink-tint); padding:6px 14px; border-radius:999px;
+  }
+  .card h3{font-size:1.3rem; font-weight:700; letter-spacing:-0.01em; margin-top:6px;}
+  .card .meta{font-size:0.92rem; color:var(--grey-700); font-weight:500;}
+  .card p.blurb{font-size:0.98rem; color:var(--grey-700); line-height:1.6; margin:4px 0 0;}
+  .card .price{font-weight:800; font-size:1rem; color:var(--ink); margin-top:6px;}
+  .card .delete-btn{
+    position:absolute; top:22px; right:22px; width:34px; height:34px; border-radius:50%;
+    border:1.5px solid var(--grey-200); background:var(--white); color:var(--grey-700);
+    cursor:pointer; font-size:0.95rem; display:flex; align-items:center; justify-content:center;
+    transition:border-color 0.15s ease, color 0.15s ease;
+  }
+  .card .delete-btn:hover{border-color:var(--pink); color:var(--pink-dark);}
+
+  .empty-state{
+    grid-column:1/-1; text-align:center; padding:48px 20px; color:var(--grey-700);
+    font-size:1rem; border:1.5px dashed var(--grey-200); border-radius:var(--radius);
+  }
+
+  footer{border-top:1px solid var(--grey-200); padding:48px 28px calc(40px + env(safe-area-inset-bottom,0px));}
+  .footer-inner{max-width:1280px; margin:0 auto;}
+  footer .disclaimer{font-size:0.88rem; color:var(--grey-700); max-width:54ch; line-height:1.6;}
+  footer .copy{font-size:0.82rem; color:#9A9BA6; margin-top:16px;}
+
+  /* ---------- modal ---------- */
+  .modal-overlay{
+    display:none; position:fixed; inset:0; background:rgba(15,16,18,0.6); z-index:100;
+    align-items:flex-start; justify-content:center; padding:24px 16px;
+    overflow-y:auto;
+  }
+  .modal-overlay.show{display:flex;}
+  .modal{
+    background:var(--white); border-radius:24px; max-width:500px; width:100%;
+    margin-top:calc(env(safe-area-inset-top,0px) + 36px);
+    padding:34px 30px 30px; position:relative;
+  }
+  .modal-close{
+    position:absolute; top:18px; right:18px; background:var(--grey-100); border:none;
+    width:34px; height:34px; border-radius:50%; font-size:1.1rem; cursor:pointer; color:var(--grey-700);
+  }
+  .modal h2{font-size:1.5rem; font-weight:800; margin-bottom:8px; letter-spacing:-0.01em;}
+  .modal .sub{font-size:0.95rem; color:var(--grey-700); margin-bottom:24px;}
+
+  .choice-row{display:flex; flex-direction:column; gap:14px;}
+  .choice-btn{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    border:1.5px solid var(--grey-200); border-radius:16px; padding:20px 22px;
+    background:var(--white); cursor:pointer; text-align:left; font-family:inherit;
+    transition:border-color 0.15s ease;
+  }
+  .choice-btn:hover{border-color:var(--pink);}
+  .choice-btn .ct{font-weight:700; font-size:1.02rem;}
+  .choice-btn .cd{font-size:0.85rem; color:var(--grey-700); margin-top:3px;}
+  .choice-btn .arrow{color:var(--pink); font-weight:700; font-size:1.1rem;}
+
+  form.reg-form{display:flex; flex-direction:column; gap:16px;}
+  .field{display:flex; flex-direction:column; gap:7px;}
+  .field label{font-size:0.86rem; font-weight:700;}
+  .field input, .field textarea{
+    font-family:inherit; font-size:0.98rem; padding:12px 14px; border:1.5px solid var(--grey-200);
+    border-radius:12px; background:var(--white); color:var(--ink); resize:vertical; width:100%;
+  }
+  .field input:focus, .field textarea:focus{outline:none; border-color:var(--pink);}
+  .two-col{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+
+  .back-link{background:none; border:none; color:var(--grey-700); font-size:0.86rem; font-weight:600; cursor:pointer; padding:0; text-align:left; margin-bottom:6px;}
+  .back-link:hover{color:var(--pink-dark);}
+
+  .success-state{display:none; text-align:center; padding:14px 0 4px;}
+  .success-state.show{display:block;}
+  .success-state .tick{
+    width:56px; height:56px; border-radius:50%; background:#EAF7EE; color:#1E7B3B;
+    display:flex; align-items:center; justify-content:center; font-size:1.7rem; margin:0 auto 16px;
+  }
+  .success-state h3{font-size:1.2rem; font-weight:800; margin-bottom:8px;}
+  .success-state p{font-size:0.95rem; color:var(--grey-700); margin:0 0 22px; line-height:1.55;}
+
+  @media(prefers-reduced-motion:reduce){ html{scroll-behavior:auto;} .cta-btn{transition:none;} }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-inner">
+    <div class="logo"><span class="dot"></span>the Board</div>
+    <nav class="top-links">
+      <a href="#browse-services">Services</a>
+      <a href="#browse-societies">Societies</a>
+    </nav>
+    <button class="cta-btn" id="open-register">Register</button>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="hero-blob"></div>
+  <div class="hero-inner">
+    <h1>One site for everything NTU students are running.</h1>
+    <p>Student-run businesses, societies, and official announcements — all in one place, instead of five different Instagram pages and group chats.</p>
+    <div class="hero-actions">
+      <button class="cta-btn" id="open-register-2">Register your business or society</button>
+      <a href="#browse-services" class="btn-secondary">Browse listings</a>
+    </div>
+  </div>
+</section>
+
+<section class="about">
+  <div class="about-grid">
+    <div class="about-tile dark">
+      <h3>Student Services</h3>
+      <p>Hair, nails, tutoring, repairs — anything a student is running on the side, listed with real contact details.</p>
+    </div>
+    <div class="about-tile pink">
+      <h3>Societies</h3>
+      <p>What's on, when it meets, and how to join.</p>
+    </div>
+    <div class="about-tile light">
+      <h3>Official Adverts</h3>
+      <p>Space for NTU and NTSU announcements and notices.</p>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="browse-services">
+  <div class="block-inner wide">
+    <div class="block-head">
+      <div>
+        <h2>Student Services</h2>
+        <p>Businesses registered by NTU students.</p>
+      </div>
+    </div>
+    <div class="grid" id="services-grid"><div class="empty-state">Loading…</div></div>
+  </div>
+</section>
+
+<section class="block grey" id="browse-societies">
+  <div class="block-inner wide">
+    <div class="block-head">
+      <div>
+        <h2>Societies</h2>
+        <p>Societies registered by NTU students.</p>
+      </div>
+    </div>
+    <div class="grid" id="societies-grid"><div class="empty-state">Loading…</div></div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-inner">
+    <p class="disclaimer">The Board is a listings platform only. We don't vet, endorse, or take responsibility for the quality of anyone's product or service.</p>
+    <p class="copy">Not an official NTU or NTSU service.</p>
+  </div>
+</footer>
+
+<!-- ---------- registration modal ---------- -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <button class="modal-close" id="modal-close">✕</button>
+
+    <div id="step-choice">
+      <h2>Register on the Board</h2>
+      <p class="sub">What would you like to list?</p>
+      <div class="choice-row">
+        <button class="choice-btn" data-choice="business">
+          <div>
+            <div class="ct">A business</div>
+            <div class="cd">Hair, nails, tutoring, repairs, or anything else</div>
+          </div>
+          <span class="arrow">→</span>
+        </button>
+        <button class="choice-btn" data-choice="society">
+          <div>
+            <div class="ct">A society</div>
+            <div class="cd">Clubs, groups, and regular meet-ups</div>
+          </div>
+          <span class="arrow">→</span>
+        </button>
+      </div>
+    </div>
+
+    <div id="step-business" style="display:none;">
+      <button class="back-link" data-back>← Back</button>
+      <h2>Register a business</h2>
+      <p class="sub">Tell us what you're offering.</p>
+      <form class="reg-form" id="business-form">
+        <div class="field">
+          <label for="b-name">Business name</label>
+          <input id="b-name" type="text" required>
+        </div>
+        <div class="field">
+          <label for="b-what">What do you offer?</label>
+          <input id="b-what" type="text" placeholder="e.g. haircuts, tutoring, nail sets" required>
+        </div>
+        <div class="two-col">
+          <div class="field">
+            <label for="b-price">Price</label>
+            <input id="b-price" type="text" placeholder="e.g. from £10">
+          </div>
+          <div class="field">
+            <label for="b-location">Location</label>
+            <input id="b-location" type="text" placeholder="e.g. Clifton campus">
+          </div>
+        </div>
+        <div class="field">
+          <label for="b-desc">Description</label>
+          <textarea id="b-desc" rows="3" placeholder="Anything else people should know"></textarea>
+        </div>
+        <div class="field">
+          <label for="b-contact">Contact (email, phone, or social handle)</label>
+          <input id="b-contact" type="text" required>
+        </div>
+        <button type="submit" class="cta-btn">Submit listing</button>
+      </form>
+    </div>
+
+    <div id="step-society" style="display:none;">
+      <button class="back-link" data-back>← Back</button>
+      <h2>Register a society</h2>
+      <p class="sub">Tell us about your society.</p>
+      <form class="reg-form" id="society-form">
+        <div class="field">
+          <label for="s-name">Society name</label>
+          <input id="s-name" type="text" required>
+        </div>
+        <div class="field">
+          <label for="s-what">What it's about</label>
+          <input id="s-what" type="text" required>
+        </div>
+        <div class="field">
+          <label for="s-meet">Where and when you meet</label>
+          <input id="s-meet" type="text" placeholder="e.g. Thursdays 6pm, City campus">
+        </div>
+        <div class="field">
+          <label for="s-desc">Description</label>
+          <textarea id="s-desc" rows="3" placeholder="Anything else people should know"></textarea>
+        </div>
+        <div class="field">
+          <label for="s-contact">Contact (email, phone, or social handle)</label>
+          <input id="s-contact" type="text" required>
+        </div>
+        <button type="submit" class="cta-btn">Submit listing</button>
+      </form>
+    </div>
+
+    <div class="success-state" id="step-success">
+      <div class="tick">✓</div>
+      <h3>You're registered</h3>
+      <p>Thanks — your listing has been saved and is now showing on the site below.</p>
+      <button class="cta-btn" id="success-close">Done</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ---------------------------------------------------------------
+  // Supabase connection — this is your real, live database.
+  // The key below is the "publishable" key, which is safe to expose
+  // in client-side code like this (that's what it's designed for).
+  // Never put your "secret" key in a file like this one.
+  // ---------------------------------------------------------------
+  const SUPABASE_URL = "https://xvenwgfvgkdauxfkcgcg.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_BgpvbiU9CkH2y1WSS3ZPWw_6yTCivS0";
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  function escapeHtml(str){
+    const d = document.createElement('div');
+    d.textContent = str || '';
+    return d.innerHTML;
+  }
+
+  async function deleteListing(table, id, reload){
+    const sure = confirm('Remove this listing? This can\'t be undone.');
+    if(!sure) return;
+    const { error } = await supabase.from(table).delete().eq('id', id);
+    if(error){
+      alert('Couldn\'t remove that listing. Please try again.');
+      console.error(error);
+      return;
+    }
+    reload();
+  }
+
+  async function loadBusinesses(){
+    const el = document.getElementById('services-grid');
+    const { data, error } = await supabase
+      .from('businesses')
+      .select('*')
+      .order('created_at', { ascending:false });
+
+    if(error){
+      el.innerHTML = '<div class="empty-state">Couldn\'t load listings right now.</div>';
+      console.error(error);
+      return;
+    }
+    if(!data || data.length === 0){
+      el.innerHTML = '<div class="empty-state">No businesses registered yet — be the first!</div>';
+      return;
+    }
+    el.innerHTML = data.map(b => `
+      <div class="card">
+        <button class="delete-btn" data-table="businesses" data-id="${b.id}" title="Remove listing">✕</button>
+        <span class="tag">Student service</span>
+        <h3>${escapeHtml(b.name)}</h3>
+        <div class="meta">${escapeHtml(b.what)}${b.location ? ' · ' + escapeHtml(b.location) : ''}</div>
+        ${b.description ? `<p class="blurb">${escapeHtml(b.description)}</p>` : ''}
+        ${b.price ? `<div class="price">${escapeHtml(b.price)}</div>` : ''}
+        <div class="meta">Contact: ${escapeHtml(b.contact)}</div>
+      </div>
+    `).join('');
+    el.querySelectorAll('.delete-btn').forEach(btn=>{
+      btn.addEventListener('click', ()=> deleteListing('businesses', btn.dataset.id, loadBusinesses));
+    });
+  }
+
+  async function loadSocieties(){
+    const el = document.getElementById('societies-grid');
+    const { data, error } = await supabase
+      .from('societies')
+      .select('*')
+      .order('created_at', { ascending:false });
+
+    if(error){
+      el.innerHTML = '<div class="empty-state">Couldn\'t load listings right now.</div>';
+      console.error(error);
+      return;
+    }
+    if(!data || data.length === 0){
+      el.innerHTML = '<div class="empty-state">No societies registered yet — be the first!</div>';
+      return;
+    }
+    el.innerHTML = data.map(s => `
+      <div class="card">
+        <button class="delete-btn" data-table="societies" data-id="${s.id}" title="Remove listing">✕</button>
+        <span class="tag">Society</span>
+        <h3>${escapeHtml(s.name)}</h3>
+        <div class="meta">${escapeHtml(s.what)}</div>
+        ${s.meet ? `<div class="meta">${escapeHtml(s.meet)}</div>` : ''}
+        ${s.description ? `<p class="blurb">${escapeHtml(s.description)}</p>` : ''}
+        <div class="meta">Contact: ${escapeHtml(s.contact)}</div>
+      </div>
+    `).join('');
+    el.querySelectorAll('.delete-btn').forEach(btn=>{
+      btn.addEventListener('click', ()=> deleteListing('societies', btn.dataset.id, loadSocieties));
+    });
+  }
+
+  const overlay = document.getElementById('modal-overlay');
+  const stepChoice = document.getElementById('step-choice');
+  const stepBusiness = document.getElementById('step-business');
+  const stepSociety = document.getElementById('step-society');
+  const stepSuccess = document.getElementById('step-success');
+
+  function openModal(){
+    overlay.classList.add('show');
+    showStep('choice');
+  }
+  function closeModal(){
+    overlay.classList.remove('show');
+  }
+  function showStep(name){
+    stepChoice.style.display = name === 'choice' ? 'block' : 'none';
+    stepBusiness.style.display = name === 'business' ? 'block' : 'none';
+    stepSociety.style.display = name === 'society' ? 'block' : 'none';
+    stepSuccess.classList.toggle('show', name === 'success');
+  }
+
+  document.getElementById('open-register').addEventListener('click', openModal);
+  document.getElementById('open-register-2').addEventListener('click', openModal);
+  document.getElementById('modal-close').addEventListener('click', closeModal);
+  document.getElementById('success-close').addEventListener('click', closeModal);
+  overlay.addEventListener('click', e => { if(e.target === overlay) closeModal(); });
+  document.addEventListener('keydown', e => { if(e.key === 'Escape') closeModal(); });
+
+  document.querySelectorAll('.choice-btn').forEach(btn => {
+    btn.addEventListener('click', () => showStep(btn.dataset.choice));
+  });
+  document.querySelectorAll('[data-back]').forEach(btn => {
+    btn.addEventListener('click', () => showStep('choice'));
+  });
+
+  document.getElementById('business-form').addEventListener('submit', async function(e){
+    e.preventDefault();
+    const submitBtn = this.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting…';
+
+    const { error } = await supabase.from('businesses').insert({
+      name: document.getElementById('b-name').value.trim(),
+      what: document.getElementById('b-what').value.trim(),
+      price: document.getElementById('b-price').value.trim(),
+      location: document.getElementById('b-location').value.trim(),
+      description: document.getElementById('b-desc').value.trim(),
+      contact: document.getElementById('b-contact').value.trim()
+    });
+
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Submit listing';
+
+    if(error){
+      alert('Something went wrong submitting your listing. Please try again.');
+      console.error(error);
+      return;
+    }
+    this.reset();
+    showStep('success');
+    loadBusinesses();
+  });
+
+  document.getElementById('society-form').addEventListener('submit', async function(e){
+    e.preventDefault();
+    const submitBtn = this.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting…';
+
+    const { error } = await supabase.from('societies').insert({
+      name: document.getElementById('s-name').value.trim(),
+      what: document.getElementById('s-what').value.trim(),
+      meet: document.getElementById('s-meet').value.trim(),
+      description: document.getElementById('s-desc').value.trim(),
+      contact: document.getElementById('s-contact').value.trim()
+    });
+
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Submit listing';
+
+    if(error){
+      alert('Something went wrong submitting your listing. Please try again.');
+      console.error(error);
+      return;
+    }
+    this.reset();
+    showStep('success');
+    loadSocieties();
+  });
+
+  loadBusinesses();
+  loadSocieties();
+</script>
+
+</body>
+</html>
