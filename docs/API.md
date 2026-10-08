@@ -58,7 +58,7 @@ Every non-2xx response has this body:
 **ListingSummary** (cards)
 ```json
 {
-  "id": "svc_fade-theory", "kind": "services", "name": "Fade Theory",
+  "id": "svc_fade-theory", "kind": "services", "area": "Lenton", "name": "Fade Theory",
   "cat": "Hair", "sub": "Barbers", "desc": "Clean fades...",
   "meta": ["Lenton", "Evenings and weekends"],
   "contact": "@fade.theory",
@@ -69,7 +69,7 @@ Every non-2xx response has this body:
   "status": "live", "example": false
 }
 ```
-`banner` is the wide cover image shown at the top of a profile (like X/Twitter); the avatar overlaps it. `kind` is `services`, `socs` or `official`. `sub`, `from`, `avatar`, `rating` may be null/absent (societies and notices have no `sub`, `from`, `rating`). `from` is the lowest price in the menu, ignoring the group called `Add-ons`. `example` is only true for seeded demo rows.
+`banner` is the wide cover image shown at the top of a profile (like X/Twitter); the avatar overlaps it. `kind` is `services` or `official` (`socs` is reserved for later). `area` is where a business is based (one of `GET /areas`, or `Online`); it drives "Recommended for you". `sub`, `from`, `avatar`, `rating` may be null/absent (societies and notices have no `sub`, `from`, `rating`). `from` is the lowest price in the menu, ignoring the group called `Add-ons`. `example` is only true for seeded demo rows.
 
 **Listing** (detail) = ListingSummary plus:
 ```json
@@ -111,6 +111,10 @@ Every non-2xx response has this body:
 ### Meta
 `GET /meta` returns `{ "counts": { "services": 19, "socs": 5, "official": 3 } }`. Counts of live listings.
 
+`GET /areas` returns `{ "items": ["City centre", "Lenton", ..., "Online"] }`, the areas a business can pick.
+
+`GET /recommended?lat=&lng=&area=&limit=6` returns `{ "basis": "location"|"area"|"rating", "items": [ListingSummary + distanceKm] }`. The home page sends `lat`/`lng` (rounded to about 1 km) if the student shares their location, or an `area` they picked, or nothing. Rank by rating adjusted for review count (so one 5-star review doesn't beat thirty 4.8s), number of reviews, and distance. `distanceKm` is null for Online businesses or when there is no location.
+
 `GET /top` returns `{ "items": [ { "id": "...", "name": "..." } ] }`. The "Top businesses this week" strip, up to 8, best first. Rank however you like (reviews in the last 7 days, views, ratings).
 
 ### Auth
@@ -122,7 +126,7 @@ Every non-2xx response has this body:
 | `GET /auth/me` | Returns `{ user }` for the token, or 401. The front end calls this on page load. |
 
 ### Listings
-`GET /listings` query: `kind` (required), `category`, `sub`, `q` (search words), `sort` (`top`, `price`, `reviews`, `reply`; empty = your default order), `minRating` (e.g. 4), `limit` (default 24, max 100), `offset`.
+`GET /listings` query: `kind` (required), `category`, `sub`, `q` (search words), `sort` (`top`, `price`, `reviews`, `reply`; empty = your default order), `minRating` (1 to 5), `limit` (default 24, max 100), `offset`.
 Returns `{ "items": [ListingSummary], "total": 19, "facets": { "subs": { "Barbers": 2, "Braids": 2 } } }`. `facets.subs` counts listings per type with every filter applied **except** `sub`, so the type buttons can show counts. Search should match name, category, sub, description, meta and menu item names. Only `status: "live"` rows.
 
 `GET /listings/:id` returns `{ "listing": Listing }`. 404 if missing.
@@ -130,10 +134,10 @@ Returns `{ "items": [ListingSummary], "total": 19, "facets": { "subs": { "Barber
 `POST /listings` (auth, **business accounts only**, else 403). body:
 ```json
 { "kind": "services", "name": "...", "cat": "Hair", "sub": "Barbers", "desc": "...", "meta": ["City centre"],
-  "contact": "@x", "menu": [ { "group": null, "items": [ { "name": "Fade", "price": "£25" } ] } ],
+  "contact": "@x", "area": "Lenton", "menu": [ { "group": null, "items": [ { "name": "Fade", "price": "£25" } ] } ],
   "policy": "...", "avatarId": "up_1", "bannerId": "up_4", "photoIds": ["up_2", "up_3"] }
 ```
-Required: `kind`, `name`, `cat`, `desc`, `contact`. `kind: "official"` should be limited to staff accounts (your call; the demo allows anyone). Max 4 photos. `avatarId`/`bannerId`/`photoIds` are ids from `/uploads` owned by the caller. Returns `201 { listing }` with `status: "pending"` if you moderate, or `"live"`. The front end shows "submitted for review" for `pending`.
+Required: `kind`, `name`, `cat`, `desc`, `contact`, and `area` for services. `kind: "official"` should be limited to staff accounts (your call; the demo allows anyone). Max 4 photos. `avatarId`/`bannerId`/`photoIds` are ids from `/uploads` owned by the caller. Returns `201 { listing }` with `status: "pending"` if you moderate, or `"live"`. The front end shows "submitted for review" for `pending`.
 
 `GET /me/listings` (auth) returns `{ "items": [ListingSummary + avgResponseSeconds] }`, the listings the user owns including pending ones.
 

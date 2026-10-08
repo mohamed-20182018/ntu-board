@@ -16,7 +16,7 @@ function studentHTML(d){
   ${d.toReview.length?`<div class="dsec2"><h3>Waiting for your review</h3>${d.toReview.map(r=>`<div class="drow">${avatar(r,40)}<div class="grow"><b>${esc(r.name)}</b><small>Appointment complete. Tell others how it went.</small></div><button class="btn pink sm" type="button" data-review="${esc(r.listingId)}">Leave a review</button></div>`).join('')}</div>`:''}
   <div class="dsec2"><h3>Your conversations</h3>${d.threads.length?d.threads.map(t=>`<div class="drow">${avatar({name:t.listingName,cat:t.listingCat,avatar:t.listingAvatar},40)}<div class="grow"><b>${esc(t.listingName)}</b><small>${lastText(t)}</small></div>${t.unread?`<span class="chip live">${t.unread} new</span>`:''}<button class="btn ghost sm" type="button" data-th="${esc(t.id)}">Open</button></div>`).join(''):'<p class="hint">No conversations yet. Open a business and press Message.</p>'}</div>
   ${d.reviews.length?`<div class="dsec2"><h3>Your reviews</h3>${d.reviews.map(r=>`<div class="rv">${stars(r.rating)}<p>${esc(r.text)}</p><small>${esc(r.listingName)} · ${esc(relTime(r.createdAt))}</small></div>`).join('')}</div>`:''}
-  <div class="upgrade"><p><b>Run a business or society?</b> Switch to a business account to list it, get a business dashboard and receive customer messages.</p><button class="btn dark sm" type="button" id="dash-upgrade">Switch to a business account</button></div>`;
+  <div class="upgrade"><p><b>Run a business?</b> Switch to a business account to list it, get a business dashboard and receive customer messages.</p><button class="btn dark sm" type="button" id="dash-upgrade">Switch to a business account</button></div>`;
 }
 function businessHTML(d){
   const s=d.stats;

@@ -26,8 +26,8 @@
   <div class="wrap">
     <div class="notice" id="demo-note"><span class="pin" aria-hidden="true"></span><div><strong>This is a demo.</strong> Every listing here is an example and nothing is live yet. Try signing up, messaging a business or listing your own.</div></div>
     <div class="fcols">
-      <div class="fbrand"><a class="logo" href="index.html"><span class="pin" aria-hidden="true"></span>the Board</a><p>Student businesses, societies and official notices in one place. Made by students, for students.</p></div>
-      <nav aria-label="Find things"><h3>Find</h3><a href="index.html#browse">Browse everything</a><a href="index.html?cat=Hair#browse">Hair</a><a href="index.html?cat=Food#browse">Food</a><a href="index.html?cat=Tutoring#browse">Tutoring</a><a href="index.html?tab=socs#browse">Societies</a></nav>
+      <div class="fbrand"><a class="logo" href="index.html"><span class="pin" aria-hidden="true"></span>the Board</a><p>Student businesses and official notices in one place. Made by students, for students.</p></div>
+      <nav aria-label="Find things"><h3>Find</h3><a href="index.html#browse">Browse everything</a><a href="index.html?cat=Hair#browse">Hair</a><a href="index.html?cat=Food#browse">Food</a><a href="index.html?cat=Tutoring#browse">Tutoring</a><a href="index.html?cat=Photography#browse">Photography</a></nav>
       <nav aria-label="For businesses"><h3>For businesses</h3><button class="flink" type="button" data-open-register>List your business</button><a href="how-it-works.html#businesses">How listing works</a><a href="how-it-works.html#reviews">How reviews work</a></nav>
       <nav aria-label="Help"><h3>Help</h3><a href="how-it-works.html">How it works</a><a href="how-it-works.html#safety">Staying safe</a><a href="how-it-works.html#faq">Questions</a><a href="mailto:hello@theboard.example">Contact us</a></nav>
     </div>

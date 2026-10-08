@@ -40,9 +40,9 @@ $$('catpanel').addEventListener('click',e=>{
 });
 $$('filters').addEventListener('change',e=>{
   if(e.target.id==='f-sort'){B.sort=e.target.value;loadListings()}
+  if(e.target.id==='f-rate'){B.minRating=+e.target.value||0;loadListings()}
 });
 $$('filters').addEventListener('click',e=>{
-  if(e.target.closest('#f-rate')){B.minRating=B.minRating>=4?0:4;loadListings()}
   if(e.target.closest('#f-clear')){B.sort='';B.minRating=0;loadListings();$('f-sort').focus()}
 });
 
@@ -72,7 +72,7 @@ function cardHTML(it){
       ${kind==='services'?`<div class="rate">${n&&it.rating!=null?`${stars(it.rating)}<span>${it.rating.toFixed(1)} (${n})</span>`:'<span>No reviews yet</span>'}</div>`:''}
       <p>${esc(it.desc)}</p>
       <div class="meta">${(it.from?[it.from]:[]).concat(it.meta||[]).map(m=>`<span>${esc(m)}</span>`).join('')}</div>
-      ${kind==='services'&&!it.preview?`<button class="btn dark sm" type="button" data-detail="${esc(it.id)}">Menu and reviews</button>`:''}
+      ${it.near?`<p class="near">${esc(it.near)}</p>`:''}${kind==='services'&&!it.preview?`<button class="btn dark sm" type="button" data-detail="${esc(it.id)}">Menu and reviews</button>`:''}
       <div class="contact"><code>${esc(it.contact)}</code>${kind==='official'?'':`<button class="copy" type="button" data-copy="${esc(it.contact)}">Copy</button>`}</div>
     </div>
   </article>`;
@@ -102,7 +102,7 @@ function drawChrome(){
     const any=B.sort||B.minRating;
     fl.hidden=false;
     fl.innerHTML=`<label class="fsel"><span>Sort</span><select id="f-sort"><option value="">Recommended</option>${[['top','Top rated'],['price','Lowest price'],['reviews','Most reviews'],['reply','Fastest reply']].map(([v,t])=>`<option value="${v}" ${B.sort===v?'selected':''}>${t}</option>`).join('')}</select></label>
-      <button class="typebtn" type="button" id="f-rate" aria-pressed="${B.minRating>=4}">4 stars and up</button>
+      <label class="fsel"><span>Rating</span><select id="f-rate"><option value="">Any rating</option>${[5,4,3,2,1].map(n=>`<option value="${n}" ${B.minRating===n?'selected':''}>${n===5?'5 stars only':n+' stars and up'}</option>`).join('')}</select></label>
       ${any?'<button class="link" type="button" id="f-clear">Clear filters</button>':''}`;
   }else{fl.hidden=true;fl.innerHTML=''}
   if(fkey){const n=fkey.startsWith('sub:')?cp.querySelector(`[data-sub="${CSS.escape(fkey.slice(4))}"]`):document.getElementById(fkey);if(n&&n!==fa)n.focus()}

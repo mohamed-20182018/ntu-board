@@ -21,7 +21,7 @@ function drawAuth(msg,keep){
       ${up?`<div class="f"><label for="a-name">Your name</label><input type="text" id="a-name" autocomplete="name" maxlength="40" value="${esc(keep.name)}"></div>`:''}
       <div class="f"><label for="a-email">Email</label><input type="text" inputmode="email" id="a-email" autocomplete="email" placeholder="you@example.com" value="${esc(keep.email)}"></div>
       <div class="f"><label for="a-pw">Password ${up?'<span class="hint">at least 8 characters</span>':''}</label><input type="password" id="a-pw" autocomplete="${up?'new-password':'current-password'}"></div>
-      ${up?`<div class="f"><label for="a-type">I'm joining as</label><select id="a-type"><option value="student">A student looking for services</option><option value="business" ${keep.type==='business'?'selected':''}>A student running a business or society</option></select></div>
+      ${up?`<div class="f"><label for="a-type">I'm joining as</label><select id="a-type"><option value="student">A student looking for services</option><option value="business" ${keep.type==='business'?'selected':''}>A student running a business</option></select></div>
       <label class="check" for="a-agree"><input type="checkbox" id="a-agree" ${keep.agree?'checked':''}>I understand the Board is a listings platform only and is not an official university or students’ union service.</label>`:''}
       <p class="err" id="a-err" role="alert" ${msg?'':'hidden'}>${esc(msg||'')}</p>
       ${API.cfg.demoLogins&&!up?'<p class="hint" style="margin:0 0 10px">Demo: see the business side with <button class="link" type="button" id="a-demo">the demo business account</button> (owner@demo.test / demo1234).</p>':''}
@@ -93,7 +93,7 @@ function askUpgrade(cb,btn){
   afterUpgrade=cb||null;aOpener=btn||document.activeElement;
   aov.hidden=false;document.body.style.overflow='hidden';
   $('asheet').innerHTML=`<div class="sheet-head"><h2 id="a-title" tabindex="-1">Listing is for business accounts</h2><button class="x" id="a-x" type="button" aria-label="Close">${X_ICON}</button></div>
-    <p style="margin:12px 0">Your account is a student account, which is for finding and messaging businesses. Switch it to a business account to list a business, society or notice. You will also get a business dashboard and an inbox for customer messages.</p>
+    <p style="margin:12px 0">Your account is a student account, which is for finding and messaging businesses. Switch it to a business account to list a business or notice. You will also get a business dashboard and an inbox for customer messages.</p>
     <p class="err" id="up-err" role="alert" hidden></p>
     <div class="row-btns"><button class="btn ghost" type="button" id="up-no">Not now</button><button class="btn pink" type="button" id="up-yes">Switch to a business account</button></div>`;
   $('a-title').focus();

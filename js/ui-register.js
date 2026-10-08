@@ -1,11 +1,10 @@
-/* Register a business, society or notice. Pictures upload as soon as they are picked (API.upload);
+/* Register a business or an official notice. Pictures upload as soon as they are picked (API.upload);
    "Post" then sends their ids with the form (API.createListing). Needs a signed-in user. */
 const ov=$('overlay'),sheet=$('sheet'),stepEl=$('step'),bars=[...document.querySelectorAll('.progress i')];
 const MAXPH=4;
 let st={},opener=null;
 const KINDS=[
   {k:'services',t:'A student business',s:'Hair, nails, tutoring, repairs, food and more',i:ICONS.pound,bg:'var(--butter)'},
-  {k:'socs',t:'A society',s:'Sport, culture, faith, tech, arts and more',i:ICONS.users,bg:'var(--mint)'},
   {k:'official',t:'An official notice',s:'For university and students’ union staff only',i:ICONS.bell,bg:'var(--sky)'}
 ];
 
@@ -14,7 +13,7 @@ function openSheet(e){
   if(!USER){openAuth('up',()=>openSheet({currentTarget:btn}),btn);return}
   if(USER.type!=='business'){askUpgrade(()=>openSheet({currentTarget:btn}),btn);return}
   opener=btn;
-  st={step:0,kind:null,name:'',cat:'',desc:'',meta:'',contact:'',agree:false,photos:[],pmsg:'',menu:'',policy:'',sub:'',avatar:null,banner:null,up:0,posting:false,perr:'',result:null};
+  st={step:0,kind:null,name:'',cat:'',desc:'',meta:'',contact:'',agree:false,photos:[],pmsg:'',menu:'',policy:'',sub:'',area:'',avatar:null,banner:null,up:0,posting:false,perr:'',result:null};
   ov.hidden=false;document.body.style.overflow='hidden';draw();
 }
 function closeSheet(){ov.hidden=true;document.body.style.overflow='';if(opener&&opener.focus)opener.focus()}
@@ -43,7 +42,7 @@ function parseMenu(t){
   return items.length?[{group:null,items}]:[];
 }
 const metaList=s=>s.split(',').map(x=>x.trim()).filter(Boolean);
-function save(){for(const k of ['name','cat','sub','desc','meta','contact','menu','policy']){const el=$('r-'+k);if(el)st[k]=el.value}}
+function save(){for(const k of ['name','cat','sub','area','desc','meta','contact','menu','policy']){const el=$('r-'+k);if(el)st[k]=el.value}}
 
 async function pickAvatar(f){
   save();
@@ -92,6 +91,7 @@ function draw(){
       ${svc?`<div class="f"><span class="lbl" id="bn-l">Cover picture <span class="hint">optional, the wide image at the top of your profile</span></span>
         <div class="bnpick" style="background:${(CAT[st.cat]||CAT.Other).c}">${st.banner?`<img src="${esc(st.banner.url)}" alt="Your cover picture">`:''}</div>
         <div class="avpick" style="margin-top:8px"><label class="addph"><input type="file" id="r-banner" accept="image/jpeg,image/png,image/webp" aria-describedby="bn-l"><span>${st.banner?'Change cover':'+ Add cover'}</span></label>${st.banner?'<button class="link" type="button" id="bn-rm">Remove</button>':''}</div></div>
+      <div class="f"><label for="r-area">Where you're based <span class="hint">used to show you to students nearby</span></label><select id="r-area"><option value="">Choose one</option>${AREAS.map(a=>`<option ${st.area===a?'selected':''}>${a}</option>`).join('')}</select></div>
       <div class="f"><label for="r-sub">Type of service <span class="hint">what you do, e.g. Barbers or Braids</span></label><select id="r-sub"><option value="">Choose one</option>${subOpts()}</select></div>
       <div class="f"><span class="lbl" id="av-l">Profile picture <span class="hint">optional, a logo or a face. You can add one later.</span></span>
         <div class="avpick">${avatar({name:st.name||'You',cat:st.cat||'Other',avatar:st.avatar&&st.avatar.url},64)}<label class="addph"><input type="file" id="r-avatar" accept="image/jpeg,image/png,image/webp" aria-describedby="av-l"><span>${st.avatar?'Change picture':'+ Add picture'}</span></label>${st.avatar?'<button class="link" type="button" id="av-rm">Remove</button>':''}</div></div>`:''}
@@ -119,7 +119,7 @@ function draw(){
     $('back').addEventListener('click',()=>{save();st.step=0;draw()});
     $('f').addEventListener('submit',e=>{
       e.preventDefault();save();
-      const miss=[['name','a name'],['cat','a category'],['desc','a short description'],['contact',off?'who it’s from':'a way to contact you']].filter(([k])=>!st[k].trim()).map(x=>x[1]);
+      const miss=[['name','a name'],['cat','a category']].concat(svc?[['area','where you\'re based']]:[]).concat([['desc','a short description'],['contact',off?'who it’s from':'a way to contact you']]).filter(([k])=>!st[k].trim()).map(x=>x[1]);
       const er=$('err');
       if(miss.length){er.textContent='Add '+miss.join(', ')+' to continue.';er.hidden=false;return}
       st.step=2;draw();
@@ -138,7 +138,7 @@ function draw(){
       const done=busy(e.currentTarget,'Posting…');$('back2').disabled=true;
       try{
         st.result=await API.createListing({kind:st.kind,name:st.name.trim(),cat:st.cat,sub:st.sub||null,desc:st.desc.trim(),meta:metaList(st.meta),contact:st.contact.trim(),
-          menu:st.kind==='services'?parseMenu(st.menu):[],policy:st.policy.trim()||null,avatarId:st.avatar?st.avatar.id:null,bannerId:st.banner?st.banner.id:null,photoIds:st.photos.map(p=>p.id)});
+          menu:st.kind==='services'?parseMenu(st.menu):[],policy:st.policy.trim()||null,area:st.kind==='services'?st.area:null,avatarId:st.avatar?st.avatar.id:null,bannerId:st.banner?st.banner.id:null,photoIds:st.photos.map(p=>p.id)});
       }catch(err){
         done();$('back2').disabled=false;st.perr=errMsg(err);const er=$('err2');er.textContent=st.perr;er.hidden=false;return;
       }

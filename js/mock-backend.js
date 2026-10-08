@@ -16,6 +16,10 @@
     socs: ['Culture', 'Sport', 'Tech', 'Arts', 'Faith', 'Academic', 'Other'],
     official: ['University', 'Students’ union']
   };
+  /* Areas a business can pick, with a rough centre point. A real backend would geocode a postcode instead. */
+  const AREAS = { 'City centre': [52.9540, -1.1550], 'Lenton': [52.9440, -1.1830], 'Radford': [52.9560, -1.1800], 'Beeston': [52.9260, -1.2150],
+    'West Bridgford': [52.9300, -1.1300], 'Sneinton': [52.9530, -1.1300], 'Online': null };
+  const km = (a, b) => { const r = x => x * Math.PI / 180, dLat = r(b[0] - a[0]), dLng = r(b[1] - a[1]); const h = Math.sin(dLat / 2) ** 2 + Math.cos(r(a[0])) * Math.cos(r(b[0])) * Math.sin(dLng / 2) ** 2; return 12742 * Math.asin(Math.sqrt(h)); };
   const IMG_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
   const MAX_UPLOAD = 5 * 1024 * 1024;
   const DAY = 86400000;
@@ -90,6 +94,8 @@
 
       if (method === 'GET' && path === '/meta') return { body: { counts: this._counts() } };
       if (method === 'GET' && path === '/top') return { body: this._top() };
+      if (method === 'GET' && path === '/recommended') return { body: this._recommended(q) };
+      if (method === 'GET' && path === '/areas') return { body: { items: Object.keys(AREAS) } };
 
       if (method === 'POST' && path === '/auth/signup') return this._signup(b);
       if (method === 'POST' && path === '/auth/login') return this._login(b);
@@ -163,7 +169,7 @@
     _url(id) { return id && this.s.uploads[id] ? this.s.uploads[id].url : null; }
     _summary(l) {
       const st = this._stats(l);
-      return { id: l.id, kind: l.kind, name: l.name, cat: l.cat, sub: l.sub || null, desc: l.desc, meta: l.meta || [], contact: l.contact,
+      return { id: l.id, kind: l.kind, area: l.area || null, name: l.name, cat: l.cat, sub: l.sub || null, desc: l.desc, meta: l.meta || [], contact: l.contact,
         avatar: this._url(l.avatarId), banner: this._url(l.bannerId), photos: (l.photoIds || []).map(i => this._url(i)).filter(Boolean),
         from: l.kind === 'services' ? this._from(l) : null, rating: st.avg == null ? null : Math.round(st.avg * 10) / 10, reviewCount: st.count,
         status: l.status, example: !!l.example };
@@ -185,6 +191,22 @@
       return gaps.length ? Math.round(gaps.reduce((a, b) => a + b, 0) / gaps.length) : null;
     }
     _counts() { const c = { services: 0, socs: 0, official: 0 }; this.s.listings.forEach(l => { if (l.status === 'live') c[l.kind]++; }); return c; }
+    /* Recommended on the home page: rating (adjusted for how many reviews), number of reviews, and distance.
+       q: lat+lng (from the browser) or area (picked by the student). Without either, rating and reviews only. */
+    _recommended(q) {
+      const lat = parseFloat(q.lat), lng = parseFloat(q.lng), limit = Math.max(1, Math.min(24, parseInt(q.limit, 10) || 6));
+      const here = !isNaN(lat) && !isNaN(lng) ? [lat, lng] : (AREAS[q.area] || null);
+      const basis = !isNaN(lat) && !isNaN(lng) ? 'location' : here ? 'area' : 'rating';
+      const items = this.s.listings.filter(l => l.kind === 'services' && l.status === 'live').map(l => {
+        const st = this._stats(l), prior = 4, w = 3;
+        const rating = (st.avg == null ? prior : (st.avg * st.count + prior * w) / (st.count + w));
+        const at = AREAS[l.area], d = here && at ? km(here, at) : null;
+        const score = rating + 0.25 * Math.log1p(st.count) - (here ? (d == null ? 0.35 : Math.min(d, 8) * 0.12) : 0);
+        return { l, d, score };
+      }).sort((a, b) => b.score - a.score).slice(0, limit)
+        .map(x => Object.assign(this._summary(x.l), { distanceKm: x.d == null ? null : Math.round(x.d * 10) / 10 }));
+      return { basis, items };
+    }
     _top() {
       const items = this.s.listings.filter(l => l.kind === 'services' && l.status === 'live').map(l => ({ l, st: this._stats(l) }))
         .sort((a, b) => (b.st.avg || 0) - (a.st.avg || 0) || b.st.count - a.st.count).slice(0, 8).map(x => ({ id: x.l.id, name: x.l.name }));
@@ -219,7 +241,9 @@
       const photoIds = Array.isArray(b.photoIds) ? b.photoIds.slice(0, 4) : [];
       const own = id => { const u = this.s.uploads[id]; return u && u.ownerId === user.id; };
       if (photoIds.some(id => !own(id)) || (b.avatarId && !own(b.avatarId)) || (b.bannerId && !own(b.bannerId))) throw bad('One of your pictures is missing. Upload it again.');
-      const l = { id: 'lst_' + rid('').slice(1), bannerId: b.bannerId || null, kind, name, cat, sub: kind === 'services' ? str(b.sub, 40) || null : null, desc, meta, contact, menu, policy: str(b.policy, 400) || null,
+      const area = str(b.area, 40);
+      if (kind === 'services' && !(area in AREAS)) throw bad('Choose your area, or Online.');
+      const l = { id: 'lst_' + rid('').slice(1), area: kind === 'services' ? area : null, bannerId: b.bannerId || null, kind, name, cat, sub: kind === 'services' ? str(b.sub, 40) || null : null, desc, meta, contact, menu, policy: str(b.policy, 400) || null,
         sections: [], avatarId: b.avatarId || null, photoIds, ownerId: user.id, status: 'live', example: false, createdAt: new Date().toISOString() };
       this.s.listings.unshift(l); this._changed();
       return { status: 201, body: { listing: this._detail(l) } };

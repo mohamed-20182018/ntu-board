@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<title>the Board | Student businesses, societies and notices</title>
-<meta name="description" content="One place to find student-run businesses, societies and official notices, all in one place.">
+<title>the Board | Student businesses and notices</title>
+<meta name="description" content="One place to find student-run businesses and official notices, all in one place.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Instrument+Sans:wght@400;500;600;700&display=swap">
@@ -19,9 +19,9 @@
   <section class="hero wrap">
     <div class="eyebrow"><i aria-hidden="true"></i>Made by students, for students</div>
     <h1>One site for <span class="hl">everything</span> students are <span class="sq">running.</span></h1>
-    <p class="lede">Student-run businesses, societies, and official announcements, all in one place. No more digging through <s>five different Instagram pages</s> and <s>muted group chats</s>.</p>
+    <p class="lede">Student-run businesses and official notices, all in one place. No more digging through <s>five different Instagram pages</s> and <s>muted group chats</s>.</p>
     <div class="hero-ctas">
-      <button class="btn" type="button" data-open-register>Register your business or society
+      <button class="btn" type="button" data-open-register>List your business
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
       </button>
       <a class="btn ghost" href="#browse">Browse the Board</a>
@@ -29,12 +29,24 @@
     </div>
     <div class="stickers" aria-hidden="true">
       <div class="sticker a">knotless braids £45</div>
-      <div class="sticker b">Afro-Caribbean Soc · Thu 7pm</div>
+      <div class="sticker b">Grad shoots · from £25</div>
       <div class="sticker c">Python tutoring · 1st yrs</div>
     </div>
   </section>
 
   <div class="marquee" role="region" aria-label="Top businesses this week"><span class="mq-label">Top businesses this week</span><div class="mq-scroll" aria-hidden="true"><div class="track" id="track"></div></div></div>
+
+  <section class="wrap reco" id="reco" aria-labelledby="reco-h">
+    <div class="reco-head">
+      <div><h2 id="reco-h">Recommended for you</h2><p id="reco-sub">Top rated, with the most reviews.</p></div>
+      <div class="reco-ctl">
+        <button class="btn ghost sm" type="button" id="reco-loc">Use my location</button>
+        <label class="fsel"><span>Near</span><select id="reco-area"><option value="">Anywhere</option></select></label>
+      </div>
+    </div>
+    <p class="sr" id="reco-status" aria-live="polite"></p>
+    <div class="grid reco-grid" id="reco-grid"></div>
+  </section>
 
   <section class="wrap browse" id="browse" aria-labelledby="browse-h">
     <div class="browse-head">
@@ -85,6 +97,7 @@
 <script src="js/ui-detail.js"></script>
 <script src="js/ui-messages.js"></script>
 <script src="js/ui-dashboard.js"></script>
+<script src="js/ui-home.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>
