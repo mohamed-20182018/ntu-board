@@ -5,7 +5,7 @@ Plain HTML, CSS and JavaScript. No build step, no dependencies. Open `index.html
 ## Run it
 
 ```
-node server/dev-server.js        # http://localhost:8787, real HTTP, saves to server/data.json
+node --watch server/dev-server.js   # http://localhost:8787. Pages reload themselves when files change; --watch restarts the server when its code changes
 ```
 Or just open `index.html` in a browser: it starts in **mock mode** with example data kept in that browser. Add `?resetmock` to the address to wipe it.
 

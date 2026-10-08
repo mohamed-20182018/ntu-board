@@ -26,6 +26,17 @@ const server0 = new MockServer({
   onChange: s => { clearTimeout(saveT); saveT = setTimeout(() => fs.writeFile(DATA, JSON.stringify(s), () => {}), 150); }
 });
 
+/* Live reload: the page reloads itself when a file changes. */
+const liveClients = new Set();
+const LIVE_JS = `<script>(function(){var es=new EventSource('/__live');var up=false;es.onmessage=function(e){if(e.data==='reload')location.reload()};es.onopen=function(){if(up)location.reload();up=true};})();</script>`;
+let liveT = null;
+try {
+  fs.watch(ROOT, { recursive: true }, (ev, f) => {
+    if (!f || /(^|[\\/])(\.git|node_modules)([\\/]|$)|data\.json$|\.DS_Store$/.test(f)) return;
+    clearTimeout(liveT); liveT = setTimeout(() => { for (const r of liveClients) r.write('data: reload\n\n'); }, 120);
+  });
+} catch (_) { /* recursive watch not supported here; reload by hand */ }
+
 const CONFIG_JS = `window.BOARD_CONFIG = { mode: 'http', apiBase: '${BASE}', useCookies: false, pollMs: null, demoLogins: true };\n`;
 
 function readBody(req, limit = 12e6) {
@@ -74,6 +85,10 @@ async function api(req, res, url) {
 http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x');
   if (url.pathname.startsWith(BASE)) return api(req, res, url);
+  if (url.pathname === '/__live') {
+    res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-store', Connection: 'keep-alive' });
+    res.write(': hi\n\n'); liveClients.add(res); req.on('close', () => liveClients.delete(res)); return;
+  }
   if (url.pathname === '/js/config.js') { res.writeHead(200, { 'Content-Type': TYPES['.js'], 'Cache-Control': 'no-store' }); return res.end(CONFIG_JS); }
   let p = decodeURIComponent(url.pathname); if (p.endsWith('/')) p += 'index.html';
   const file = path.normalize(path.join(ROOT, p));
@@ -81,6 +96,8 @@ http.createServer(async (req, res) => {
   if (!file.startsWith(ROOT) || !allowed) { res.writeHead(404); return res.end('Not found'); }
   fs.readFile(file, (err, buf) => {
     if (err) { res.writeHead(404); return res.end('Not found'); }
-    res.writeHead(200, { 'Content-Type': TYPES[path.extname(file)] || 'application/octet-stream', 'Cache-Control': 'no-cache' }); res.end(buf);
+    const ext = path.extname(file);
+    if (ext === '.html') buf = Buffer.from(buf.toString().replace('</body>', LIVE_JS + '</body>'));
+    res.writeHead(200, { 'Content-Type': TYPES[ext] || 'application/octet-stream', 'Cache-Control': 'no-cache' }); res.end(buf);
   });
-}).listen(PORT, () => console.log(`The Board dev server: http://localhost:${PORT}  (API at ${BASE})`));
+}).listen(PORT, () => console.log(`The Board dev server: http://localhost:${PORT}  (API at ${BASE}). Pages reload by themselves when files change.`));
