@@ -11,6 +11,20 @@ This is everything the front end expects from a backend. Build to this and the s
 
 A working reference implementation of this whole contract lives in `js/mock-backend.js` and runs in Node via `server/dev-server.js`. When this document and the behaviour are unclear, read that file.
 
+## Two kinds of account
+
+Every user has `type`: `student` or `business`. The front end shows a different dashboard and inbox for each, but the **server must enforce it**:
+
+| | student | business |
+|---|---|---|
+| Browse, search, view profiles | yes | yes |
+| Message a business, leave a review (after an appointment) | yes | yes |
+| `GET /threads?as=business`, `POST /threads/:id/complete` | 403 | yes, for own listings only |
+| `POST /listings`, `GET /me/listings` | 403 / empty | yes |
+| `GET /me/dashboard` | student dashboard | business dashboard |
+
+A student can switch with `POST /auth/upgrade`. Signing up as `business` does it from the start.
+
 ## Errors
 
 Every non-2xx response has this body:
@@ -48,14 +62,14 @@ Every non-2xx response has this body:
   "cat": "Hair", "sub": "Barbers", "desc": "Clean fades...",
   "meta": ["Clifton campus", "Evenings and weekends"],
   "contact": "@fade.theory",
-  "avatar": "https://.../a.jpg",
+  "avatar": "https://.../a.jpg", "banner": "https://.../cover.jpg",
   "photos": ["https://.../1.jpg"],
   "from": "From £15",
   "rating": 4.7, "reviewCount": 3,
   "status": "live", "example": false
 }
 ```
-`kind` is `services`, `socs` or `official`. `sub`, `from`, `avatar`, `rating` may be null/absent (societies and notices have no `sub`, `from`, `rating`). `from` is the lowest price in the menu, ignoring the group called `Add-ons`. `example` is only true for seeded demo rows.
+`banner` is the wide cover image shown at the top of a profile (like X/Twitter); the avatar overlaps it. `kind` is `services`, `socs` or `official`. `sub`, `from`, `avatar`, `rating` may be null/absent (societies and notices have no `sub`, `from`, `rating`). `from` is the lowest price in the menu, ignoring the group called `Add-ons`. `example` is only true for seeded demo rows.
 
 **Listing** (detail) = ListingSummary plus:
 ```json
@@ -67,10 +81,11 @@ Every non-2xx response has this body:
     { "title": "Late fees", "type": "fees", "rows": [ { "label": "Up to 10 minutes", "value": "Grace period, no fee" } ] },
     { "title": "Late policy", "type": "list", "items": ["There is a 10 minute grace period."] }
   ],
-  "ownerId": "u_9"
+  "ownerId": "u_9",
+  "avgResponseSeconds": 960
 }
 ```
-`sections` become the full-screen "highlights" on a profile. `type: "fees"` renders rows, `type: "list"` renders one slide per item. Prices are display strings, not numbers.
+`avgResponseSeconds` is the average time the business took to answer a student message (ignore auto-replies; `null` until there is data). The profile shows "Replies in about 16 min". `sections` become the full-screen "highlights" on a profile. `type: "fees"` renders rows, `type: "list"` renders one slide per item. Prices are display strings, not numbers.
 
 **Review**
 ```json
@@ -83,6 +98,7 @@ Every non-2xx response has this body:
 {
   "id": "th_1", "listingId": "svc_fade-theory", "listingName": "Fade Theory", "listingCat": "Hair", "listingSub": "Barbers",
   "clientId": "u_2", "clientName": "Maya Q.",
+  "listingAvatar": "https://.../a.jpg", "listingRating": 4.7, "listingReviewCount": 3, "avgResponseSeconds": 960,
   "lastMessage": { "id": "m_9", "from": "client", "text": "Do you do fades...", "createdAt": "..." },
   "unread": 1, "appointmentCompleted": false
 }
@@ -106,23 +122,46 @@ Every non-2xx response has this body:
 | `GET /auth/me` | Returns `{ user }` for the token, or 401. The front end calls this on page load. |
 
 ### Listings
-`GET /listings` query: `kind` (required), `category`, `sub`, `q` (search words), `limit` (default 24, max 100), `offset`.
-Returns `{ "items": [ListingSummary], "total": 19 }`. Search should match name, category, sub, description, meta and menu item names. Only `status: "live"` rows.
+`GET /listings` query: `kind` (required), `category`, `sub`, `q` (search words), `sort` (`top`, `price`, `reviews`, `reply`; empty = your default order), `minRating` (e.g. 4), `campus` (e.g. `Clifton`, matched against `meta`), `limit` (default 24, max 100), `offset`.
+Returns `{ "items": [ListingSummary], "total": 19, "facets": { "subs": { "Barbers": 2, "Braids": 2 } } }`. `facets.subs` counts listings per type with every filter applied **except** `sub`, so the type buttons can show counts. Search should match name, category, sub, description, meta and menu item names. Only `status: "live"` rows.
 
 `GET /listings/:id` returns `{ "listing": Listing }`. 404 if missing.
 
-`POST /listings` (auth). body:
+`POST /listings` (auth, **business accounts only**, else 403). body:
 ```json
 { "kind": "services", "name": "...", "cat": "Hair", "sub": "Barbers", "desc": "...", "meta": ["City campus"],
   "contact": "@x", "menu": [ { "group": null, "items": [ { "name": "Fade", "price": "£25" } ] } ],
-  "policy": "...", "avatarId": "up_1", "photoIds": ["up_2", "up_3"] }
+  "policy": "...", "avatarId": "up_1", "bannerId": "up_4", "photoIds": ["up_2", "up_3"] }
 ```
-Required: `kind`, `name`, `cat`, `desc`, `contact`. `kind: "official"` should be limited to staff accounts (your call; the demo allows anyone). Max 4 photos. `avatarId`/`photoIds` are ids from `/uploads` owned by the caller. Returns `201 { listing }` with `status: "pending"` if you moderate, or `"live"`. The front end shows "submitted for review" for `pending`.
+Required: `kind`, `name`, `cat`, `desc`, `contact`. `kind: "official"` should be limited to staff accounts (your call; the demo allows anyone). Max 4 photos. `avatarId`/`bannerId`/`photoIds` are ids from `/uploads` owned by the caller. Returns `201 { listing }` with `status: "pending"` if you moderate, or `"live"`. The front end shows "submitted for review" for `pending`.
 
-`GET /me/listings` (auth) returns `{ "items": [ListingSummary] }`, the listings the user owns including pending ones.
+`GET /me/listings` (auth) returns `{ "items": [ListingSummary + avgResponseSeconds] }`, the listings the user owns including pending ones.
+
+### Dashboards and account
+`GET /me/dashboard` (auth). The shape depends on the account type.
+
+Student:
+```json
+{ "role": "student",
+  "stats": { "conversations": 2, "unread": 1, "appointments": 1, "reviews": 0 },
+  "toReview": [ { "listingId": "...", "name": "Fade Theory", "cat": "Hair", "avatar": null, "at": "..." } ],
+  "threads": [Thread], "reviews": [ { "id": "..", "listingId": "..", "listingName": "..", "rating": 5, "text": "..", "createdAt": ".." } ] }
+```
+`toReview` = completed appointments the student has not reviewed yet.
+
+Business:
+```json
+{ "role": "business",
+  "stats": { "rating": 4.7, "reviewCount": 3, "avgResponseSeconds": 960, "unread": 2, "openChats": 4, "appointments": 2 },
+  "needsReply": [Thread], "listings": [ListingSummary + avgResponseSeconds],
+  "reviews": [ { "id": "..", "listingId": "..", "listingName": "..", "rating": 5, "text": "..", "author": "..", "createdAt": ".." } ] }
+```
+`needsReply` = chats on the business's listings where the last message is from the customer or has unread messages.
+
+`POST /auth/upgrade` (auth) switches the account to `business`. Returns `{ user }`.
 
 ### Uploads
-`POST /uploads` (auth), `multipart/form-data` with fields `file` and `purpose` (`avatar` or `photo`). Allowed: JPEG, PNG, WebP (GIF for photos). Max 5 MB (the front end resizes before sending, but never trust that: check type by content, re-encode, strip EXIF, serve from a separate domain or with `Content-Disposition`). Returns `201 { "id": "up_1", "url": "https://.../up_1.jpg" }`.
+`POST /uploads` (auth), `multipart/form-data` with fields `file` and `purpose` (`avatar`, `banner` or `photo`; no GIF for avatar or banner). Allowed: JPEG, PNG, WebP (GIF for photos). Max 5 MB (the front end resizes before sending, but never trust that: check type by content, re-encode, strip EXIF, serve from a separate domain or with `Content-Disposition`). Returns `201 { "id": "up_1", "url": "https://.../up_1.jpg" }`.
 
 ### Reviews
 `GET /listings/:id/reviews` returns:
@@ -137,7 +176,7 @@ Required: `kind`, `name`, `cat`, `desc`, `contact`. `kind: "official"` should be
 ### Messages
 All thread routes require auth. A user may touch a thread only if they are its client, or they own its listing. Otherwise 403.
 
-`GET /threads?as=client|business&listingId=` returns `{ "items": [Thread] }` newest activity first. `as=client` is threads where the user is the client. `as=business` is threads on listings the user owns (optionally for one `listingId`).
+`GET /threads?as=client|business&listingId=` returns `{ "items": [Thread] }` newest activity first. `as=client` is threads where the user is the client. `as=business` is threads on listings the user owns (optionally for one `listingId`), business accounts only. The chat header for a student shows `listingAvatar`, `listingRating`, `listingReviewCount` and `avgResponseSeconds`, so return them on every Thread.
 
 `POST /threads` body `{ listingId, text? }`. Gets or creates the thread between this user and that listing. Returns `{ thread }` (201 if new). A user cannot message their own listing.
 
@@ -173,4 +212,6 @@ Every thread route also receives `?as=client|business`. A real backend can ignor
 
 ## Mock-only extras (not part of the contract)
 
-`POST /demo/appointments { listingId }` makes the signed-in student eligible to review, so the review flow can be tried without an owner. Only the mock backend has it. The "Business owner" tab in Messages is also demo only: in mock mode any signed-in user may act as the owner of any seeded business.
+`POST /demo/appointments { listingId }` makes the signed-in student eligible to review, so the review flow can be tried without an owner. Only the mock backend has it.
+
+The mock ships a demo business account that owns Fade Theory: `owner@demo.test` / `demo1234`. The login form shows a shortcut for it when `demoLogins` is true in `js/config.js` (turn that off in production).

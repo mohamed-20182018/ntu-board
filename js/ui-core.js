@@ -80,3 +80,17 @@ const shrink=f=>{const r=im=>Math.min(1,1000/Math.max(im.width,im.height));retur
 const shrinkSquare=(f,sz=256)=>canvasBlob(f,(g,im)=>{const m=Math.min(im.width,im.height);g.drawImage(im,(im.width-m)/2,(im.height-m)/2,m,m,0,0,sz,sz)},()=>sz,()=>sz,.85);
 
 const X_ICON='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+
+/* "Replies in about 16 min". seconds comes from the API (avgResponseSeconds), null when unknown. */
+function fmtReply(sec){
+  if(sec==null)return '';
+  const m=Math.round(sec/60);
+  if(sec<90)return 'under a minute';
+  if(m<90)return m+' min';
+  const h=Math.round(sec/3600);if(h<36)return h+(h===1?' hour':' hours');
+  const d=Math.round(sec/86400);return d+(d===1?' day':' days');
+}
+const CLOCK_ICON='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
+const replyLine=sec=>sec==null?'<span class="rtime">'+CLOCK_ICON+'New here, no replies yet</span>':'<span class="rtime">'+CLOCK_ICON+'Replies in about '+fmtReply(sec)+'</span>';
+/* Wide cover image for profiles. */
+const shrinkBanner=f=>canvasBlob(f,(g,im,c)=>{const r=Math.max(c.width/im.width,c.height/im.height),w=im.width*r,h=im.height*r;g.drawImage(im,(c.width-w)/2,(c.height-h)/2,w,h)},()=>1200,()=>400,.82);

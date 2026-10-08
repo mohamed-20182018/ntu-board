@@ -5,9 +5,9 @@ class ApiError extends Error {
 }
 
 const API = (() => {
-  const cfg = Object.assign({ mode: 'mock', apiBase: '/api/v1', useCookies: false, pollMs: null, mockLatency: [120, 320], mockPersist: true }, window.BOARD_CONFIG || {});
+  const cfg = Object.assign({ mode: 'mock', apiBase: '/api/v1', useCookies: false, pollMs: null, mockLatency: [120, 320], mockPersist: true, demoLogins: false }, window.BOARD_CONFIG || {});
   const isMock = cfg.mode === 'mock';
-  const TOKEN_KEY = 'board.token', MOCK_KEY = 'board.mock.v1';
+  const TOKEN_KEY = 'board.token', MOCK_KEY = 'board.mock.v2';
   const store = {
     get(k) { try { return localStorage.getItem(k); } catch (_) { return null; } },
     set(k, v) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (_) {} }
@@ -92,6 +92,8 @@ const API = (() => {
     listing: async (id, o) => (await get('/listings/' + encodeURIComponent(id), null, o)).listing,
     createListing: async b => (await post('/listings', b)).listing,
     myListings: async () => (await get('/me/listings')).items,
+    dashboard: () => get('/me/dashboard'),
+    async upgrade() { return (await post('/auth/upgrade')).user; },
     upload: (file, purpose) => request('POST', '/uploads', { file, purpose }),
 
     reviews: (id, o) => get('/listings/' + encodeURIComponent(id) + '/reviews', null, o),

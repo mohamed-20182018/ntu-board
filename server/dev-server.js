@@ -22,11 +22,11 @@ let state = null;
 try { state = JSON.parse(fs.readFileSync(DATA, 'utf8')); } catch (_) {}
 let saveT = null;
 const server0 = new MockServer({
-  state, autoReply: process.env.NO_AUTOREPLY ? false : true, demoActAsAnyOwner: !process.env.STRICT_OWNERS,
+  state, autoReply: process.env.NO_AUTOREPLY ? false : true, demoActAsAnyOwner: !!process.env.DEMO_ANY_OWNER,
   onChange: s => { clearTimeout(saveT); saveT = setTimeout(() => fs.writeFile(DATA, JSON.stringify(s), () => {}), 150); }
 });
 
-const CONFIG_JS = `window.BOARD_CONFIG = { mode: 'http', apiBase: '${BASE}', useCookies: false, pollMs: null };\n`;
+const CONFIG_JS = `window.BOARD_CONFIG = { mode: 'http', apiBase: '${BASE}', useCookies: false, pollMs: null, demoLogins: true };\n`;
 
 function readBody(req, limit = 12e6) {
   return new Promise((res, rej) => {
@@ -77,7 +77,7 @@ http.createServer(async (req, res) => {
   if (url.pathname === '/js/config.js') { res.writeHead(200, { 'Content-Type': TYPES['.js'], 'Cache-Control': 'no-store' }); return res.end(CONFIG_JS); }
   let p = decodeURIComponent(url.pathname); if (p.endsWith('/')) p += 'index.html';
   const file = path.normalize(path.join(ROOT, p));
-  const allowed = /^(index\.html|css|js|docs)([\\/]|$)/.test(path.relative(ROOT, file));
+  const allowed = /^([a-z-]+\.html|css|js|docs)([\\/]|$)/.test(path.relative(ROOT, file));
   if (!file.startsWith(ROOT) || !allowed) { res.writeHead(404); return res.end('Not found'); }
   fs.readFile(file, (err, buf) => {
     if (err) { res.writeHead(404); return res.end('Not found'); }

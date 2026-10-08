@@ -32,17 +32,18 @@
   class MockServer {
     /** opts: state, onChange(state), demoActAsAnyOwner, autoReply, latency is handled by api.js */
     constructor(opts) {
-      this.opts = Object.assign({ state: null, onChange: null, demoActAsAnyOwner: true, autoReply: true }, opts || {});
+      this.opts = Object.assign({ state: null, onChange: null, demoActAsAnyOwner: false, autoReply: true }, opts || {});
       this.s = this.opts.state || this._seed();
     }
 
     _seed() {
       const now = Date.now();
       const s = { seq: 1, users: [], sessions: {}, listings: [], reviews: [], threads: [], messages: [], appointments: [], uploads: {}, reports: [] };
-      const mkUser = (id, name, email, type) => s.users.push({ id, name, email, type, salt: 'x', hash: toyHash('x', rid('seed')) });
-      mkUser('u_owner', 'Demo Owner', 'owner@demo.test', 'business');
+      const mkUser = (id, name, email, type, pw) => s.users.push({ id, name, email, type, salt: 'x', hash: toyHash('x', pw || rid('seed')) });
+      mkUser('u_owner', 'Demo Owner', 'owner@demo.test', 'business', 'demo1234');   // demo login for the business side
       mkUser('u_maya', 'Maya Q.', 'maya@demo.test', 'student');
       mkUser('u_jaden', 'Jaden M.', 'jaden@demo.test', 'student');
+      mkUser('u_sam', 'Sam L.', 'sam@demo.test', 'student');
       let order = 0;
       for (const kind of ['services', 'socs', 'official']) {
         for (const x of SEED[kind]) {
@@ -60,6 +61,7 @@
       };
       th('th_seed1', 'u_maya', [{ f: 'client', t: 'Do you do fades on longer hair? Booking for my brother.', at: mins(95) }], 1);
       th('th_seed2', 'u_jaden', [{ f: 'client', t: 'Can I move my appointment to Sunday?', at: mins(1700) }, { f: 'business', t: 'Sunday 1pm works. See you then.', at: mins(1680) }], 0);
+      th('th_seed3', 'u_sam', [{ f: 'client', t: 'What do you charge for a taper and beard trim?', at: mins(3000) }, { f: 'business', t: 'Taper £25 plus £5 for the beard trim, so £30.', at: mins(2988) }], 0);
       s.threads[1].completed = true;
       s.appointments.push({ userId: 'u_jaden', listingId: fade, at: mins(2000) });
       return s;
@@ -98,12 +100,10 @@
       if (method === 'POST' && path === '/listings') return this._create(this._auth(user), b);
       if (method === 'GET' && path === '/me/listings') {
         this._auth(user);
-        const threadsOn = l => this.s.threads.filter(t => t.listingId === l.id).length;
-        const rows = this.s.listings.filter(l => l.ownerId === user.id || (this.opts.demoActAsAnyOwner && l.kind === 'services' && l.status === 'live'))
-          .map(l => Object.assign(this._summary(l), { mine: l.ownerId === user.id }));
-        rows.sort((a, b) => (b.mine - a.mine) || (threadsOn(this._listing(b.id)) - threadsOn(this._listing(a.id))));
-        return { body: { items: rows } };
+        return { body: { items: this._mine(user).map(l => Object.assign(this._summary(l), { mine: true, avgResponseSeconds: this._resp(l.id) })) } };
       }
+      if (method === 'GET' && path === '/me/dashboard') return { body: this._dashboard(this._auth(user)) };
+      if (method === 'POST' && path === '/auth/upgrade') { this._auth(user).type = 'business'; this._changed(); return { body: { user: this._pubUser(user) } }; }
       if (method === 'GET' && (p = m(/^\/listings\/([^/]+)$/))) return { body: { listing: this._detail(this._listing(p[0]), user) } };
 
       if (method === 'GET' && (p = m(/^\/listings\/([^/]+)\/reviews$/))) return { body: this._reviews(this._listing(p[0]), user) };
@@ -164,11 +164,26 @@
     _summary(l) {
       const st = this._stats(l);
       return { id: l.id, kind: l.kind, name: l.name, cat: l.cat, sub: l.sub || null, desc: l.desc, meta: l.meta || [], contact: l.contact,
-        avatar: this._url(l.avatarId), photos: (l.photoIds || []).map(i => this._url(i)).filter(Boolean),
+        avatar: this._url(l.avatarId), banner: this._url(l.bannerId), photos: (l.photoIds || []).map(i => this._url(i)).filter(Boolean),
         from: l.kind === 'services' ? this._from(l) : null, rating: st.avg == null ? null : Math.round(st.avg * 10) / 10, reviewCount: st.count,
         status: l.status, example: !!l.example };
     }
-    _detail(l) { return Object.assign(this._summary(l), { menu: l.menu || [], policy: l.policy || null, sections: l.sections || [], ownerId: l.ownerId }); }
+    _detail(l) { return Object.assign(this._summary(l), { menu: l.menu || [], policy: l.policy || null, sections: l.sections || [], ownerId: l.ownerId, avgResponseSeconds: this._resp(l.id) }); }
+    _mine(user) { return this.s.listings.filter(l => l.ownerId === user.id); }
+    /* Average time the business took to answer a student, in seconds. Auto-replies don't count. null until there is data. */
+    _resp(listingId) {
+      const gaps = [];
+      for (const t of this.s.threads.filter(x => x.listingId === listingId)) {
+        const ms = this.s.messages.filter(m => m.threadId === t.id && m.type !== 'system');
+        for (let i = 0; i < ms.length; i++) {
+          if (ms[i].from !== 'client') continue;
+          const reply = ms.slice(i + 1).find(m => m.from === 'business' && !m.auto);
+          if (reply) gaps.push((Date.parse(reply.createdAt) - Date.parse(ms[i].createdAt)) / 1000);
+          while (i + 1 < ms.length && ms[i + 1].from === 'client') i++;
+        }
+      }
+      return gaps.length ? Math.round(gaps.reduce((a, b) => a + b, 0) / gaps.length) : null;
+    }
     _counts() { const c = { services: 0, socs: 0, official: 0 }; this.s.listings.forEach(l => { if (l.status === 'live') c[l.kind]++; }); return c; }
     _top() {
       const items = this.s.listings.filter(l => l.kind === 'services' && l.status === 'live').map(l => ({ l, st: this._stats(l) }))
@@ -179,11 +194,22 @@
       need(CATS[q.kind], 400, 'validation_failed', 'kind must be services, socs or official.');
       const term = str(q.q, 100).toLowerCase(), limit = Math.max(1, Math.min(100, parseInt(q.limit, 10) || 24)), offset = Math.max(0, parseInt(q.offset, 10) || 0);
       const hay = l => [l.name, l.cat, l.sub || '', l.desc, ...(l.meta || []), ...[].concat(...(l.menu || []).map(g => [g.group || '', ...g.items.map(i => i.name)]))].join(' ').toLowerCase();
-      const rows = this.s.listings.filter(l => l.kind === q.kind && l.status === 'live' && (!q.category || l.cat === q.category) && (!q.sub || l.sub === q.sub) && (!term || hay(l).includes(term)));
-      return { body: { items: rows.slice(offset, offset + limit).map(l => this._summary(l)), total: rows.length } };
+      const minRating = parseFloat(q.minRating) || 0, campus = str(q.campus, 40).toLowerCase();
+      const base = this.s.listings.filter(l => l.kind === q.kind && l.status === 'live' && (!q.category || l.cat === q.category) && (!term || hay(l).includes(term))
+        && (!campus || (l.meta || []).join(' ').toLowerCase().includes(campus))
+        && (!minRating || ((this._stats(l).avg || 0) >= minRating)));
+      /* facets: how many listings of each type, before the type filter is applied, so the chips can show counts */
+      const subs = {}; base.forEach(l => { if (l.sub) subs[l.sub] = (subs[l.sub] || 0) + 1; });
+      let rows = base.filter(l => !q.sub || l.sub === q.sub);
+      const price = l => { const f = this._from(l); return f ? parseFloat(f.replace(/[^\d.]/g, '')) : Infinity; };
+      const rate = l => this._stats(l).avg || 0, cnt = l => this._stats(l).count, reply = l => { const r = this._resp(l.id); return r == null ? Infinity : r; };
+      const sorts = { top: (a, b) => rate(b) - rate(a) || cnt(b) - cnt(a), price: (a, b) => price(a) - price(b), reviews: (a, b) => cnt(b) - cnt(a), reply: (a, b) => reply(a) - reply(b) };
+      if (sorts[q.sort]) rows = rows.slice().sort(sorts[q.sort]);
+      return { body: { items: rows.slice(offset, offset + limit).map(l => this._summary(l)), total: rows.length, facets: { subs } } };
     }
     _create(user, b) {
       const kind = b.kind;
+      need(user.type === 'business', 403, 'forbidden', 'Listing is for business accounts. Switch your account to a business account first.');
       need(CATS[kind], 400, 'validation_failed', 'Choose what you are registering.');
       const name = str(b.name, 80), cat = str(b.cat, 40), desc = str(b.desc, 200), contact = str(b.contact, 120);
       const miss = [!name && 'a name', !cat && 'a category', !desc && 'a short description', !contact && 'a way to contact you'].filter(Boolean);
@@ -193,8 +219,8 @@
       const menu = (Array.isArray(b.menu) ? b.menu : []).slice(0, 6).map(g => ({ group: g && g.group ? str(g.group, 40) : null, items: ((g && g.items) || []).slice(0, 30).map(i => ({ name: str(i && i.name, 80), price: str(i && i.price, 30) })).filter(i => i.name) })).filter(g => g.items.length);
       const photoIds = Array.isArray(b.photoIds) ? b.photoIds.slice(0, 4) : [];
       const own = id => { const u = this.s.uploads[id]; return u && u.ownerId === user.id; };
-      if (photoIds.some(id => !own(id)) || (b.avatarId && !own(b.avatarId))) throw bad('One of your pictures is missing. Upload it again.');
-      const l = { id: 'lst_' + rid('').slice(1), kind, name, cat, sub: kind === 'services' ? str(b.sub, 40) || null : null, desc, meta, contact, menu, policy: str(b.policy, 400) || null,
+      if (photoIds.some(id => !own(id)) || (b.avatarId && !own(b.avatarId)) || (b.bannerId && !own(b.bannerId))) throw bad('One of your pictures is missing. Upload it again.');
+      const l = { id: 'lst_' + rid('').slice(1), bannerId: b.bannerId || null, kind, name, cat, sub: kind === 'services' ? str(b.sub, 40) || null : null, desc, meta, contact, menu, policy: str(b.policy, 400) || null,
         sections: [], avatarId: b.avatarId || null, photoIds, ownerId: user.id, status: 'live', example: false, createdAt: new Date().toISOString() };
       this.s.listings.unshift(l); this._changed();
       return { status: 201, body: { listing: this._detail(l) } };
@@ -204,7 +230,7 @@
       need(IMG_TYPES.includes(type), 415, 'unsupported_type', 'Only JPG, PNG, WebP or GIF images.');
       need(typeof u.dataUrl === 'string' && u.dataUrl.startsWith('data:image/'), 400, 'validation_failed', 'That file could not be read.');
       need((u.size || u.dataUrl.length * 0.75) <= MAX_UPLOAD, 413, 'too_large', 'That image is over 5MB.');
-      if (str(u.purpose, 10) === 'avatar') need(type !== 'image/gif', 415, 'unsupported_type', 'Profile pictures must be JPG, PNG or WebP.');
+      if (['avatar', 'banner'].includes(str(u.purpose, 10))) need(type !== 'image/gif', 415, 'unsupported_type', 'Profile and cover pictures must be JPG, PNG or WebP.');
       const id = rid('up'); this.s.uploads[id] = { url: u.dataUrl, ownerId: user.id, purpose: u.purpose || 'photo' };
       this._changed();
       return { status: 201, body: { id, url: u.dataUrl } };
@@ -239,7 +265,7 @@
     }
 
     /* ---------- messages ---------- */
-    _owns(user, l) { return l.ownerId === user.id || (this.opts.demoActAsAnyOwner && l.kind === 'services'); }
+    _owns(user, l) { return l.ownerId === user.id || (this.opts.demoActAsAnyOwner && l.kind === 'services'); }   // demo flag is off by default
     _thread(id, user, as) {
       const t = this.s.threads.find(x => x.id === id); need(t, 404, 'not_found', 'That conversation does not exist.');
       const l = this._listing(t.listingId), isClient = t.clientId === user.id, owns = this._owns(user, l);
@@ -254,11 +280,13 @@
     }
     _threadView(t, role) {
       const l = this._listing(t.listingId), c = this.s.users.find(u => u.id === t.clientId), ms = this._msgs(t.id), last = ms.filter(m => m.type !== 'system').slice(-1)[0] || ms[ms.length - 1] || null;
-      return { id: t.id, listingId: l.id, listingName: l.name, listingCat: l.cat, listingSub: l.sub || null, clientId: t.clientId, clientName: c ? c.name : 'Student',
+      const st = this._stats(l);
+      return { id: t.id, listingId: l.id, listingName: l.name, listingCat: l.cat, listingSub: l.sub || null, listingAvatar: this._url(l.avatarId), listingRating: st.avg == null ? null : Math.round(st.avg * 10) / 10, listingReviewCount: st.count, avgResponseSeconds: this._resp(l.id), clientId: t.clientId, clientName: c ? c.name : 'Student',
         lastMessage: last ? { id: last.id, from: last.from, text: last.text, createdAt: last.createdAt } : null, unread: t.unread[role] || 0, appointmentCompleted: !!t.completed || this._hasAppt(t.clientId, l.id) };
     }
     _threads(user, q) {
       const as = q.as === 'business' ? 'business' : 'client';
+      if (as === 'business') need(user.type === 'business', 403, 'forbidden', 'This is only for business accounts.');
       let rows = this.s.threads.filter(t => as === 'client' ? t.clientId === user.id : this._owns(user, this._listing(t.listingId)) && (!q.listingId || t.listingId === q.listingId));
       const items = rows.map(t => this._threadView(t, as)).sort((a, b) => ((b.lastMessage || {}).createdAt || '').localeCompare((a.lastMessage || {}).createdAt || ''));
       return { body: { items } };
@@ -298,6 +326,26 @@
         this._addMsg(t, 'business', 'Thanks for your message! I will get back to you shortly.', { auto: true });
         t.unread.client++; this._changed();
       }, 1400);
+    }
+    _dashboard(user) {
+      const lastFrom = t => { const ms = this._msgs(t.id).filter(m => m.type !== 'system'); return ms.length ? ms[ms.length - 1].from : null; };
+      if (user.type !== 'business') {
+        const mine = this.s.threads.filter(t => t.clientId === user.id), appts = this.s.appointments.filter(a => a.userId === user.id);
+        const myReviews = this.s.reviews.filter(r => r.userId === user.id);
+        const toReview = appts.filter(a => !myReviews.some(r => r.listingId === a.listingId)).map(a => { const l = this._listing(a.listingId); return { listingId: l.id, name: l.name, cat: l.cat, avatar: this._url(l.avatarId), at: a.at }; });
+        return { role: 'student', stats: { conversations: mine.length, unread: mine.reduce((n, t) => n + t.unread.client, 0), appointments: appts.length, reviews: myReviews.length },
+          toReview, threads: mine.map(t => this._threadView(t, 'client')).sort((a, b) => ((b.lastMessage || {}).createdAt || '').localeCompare((a.lastMessage || {}).createdAt || '')).slice(0, 6),
+          reviews: myReviews.map(r => ({ id: r.id, listingId: r.listingId, listingName: this._listing(r.listingId).name, rating: r.rating, text: r.text, createdAt: r.createdAt })) };
+      }
+      const ls = this._mine(user), ids = ls.map(l => l.id), ts = this.s.threads.filter(t => ids.includes(t.listingId));
+      const revs = this.s.reviews.filter(r => ids.includes(r.listingId)), appts = this.s.appointments.filter(a => ids.includes(a.listingId));
+      const gaps = ids.map(i => this._resp(i)).filter(x => x != null);
+      return { role: 'business',
+        stats: { rating: revs.length ? Math.round(revs.reduce((a, r) => a + r.rating, 0) / revs.length * 10) / 10 : null, reviewCount: revs.length,
+          avgResponseSeconds: gaps.length ? Math.round(gaps.reduce((a, b) => a + b, 0) / gaps.length) : null, unread: ts.reduce((n, t) => n + t.unread.business, 0), openChats: ts.length, appointments: appts.length },
+        needsReply: ts.filter(t => t.unread.business > 0 || lastFrom(t) === 'client').map(t => this._threadView(t, 'business')).slice(0, 8),
+        listings: ls.map(l => Object.assign(this._summary(l), { avgResponseSeconds: this._resp(l.id) })),
+        reviews: revs.slice().sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 5).map(r => ({ id: r.id, listingId: r.listingId, listingName: this._listing(r.listingId).name, rating: r.rating, text: r.text, author: r.author, createdAt: r.createdAt })) };
     }
     _complete(user, id, as) {
       const { t, l, role } = this._thread(id, user, as);

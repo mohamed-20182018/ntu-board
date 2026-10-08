@@ -23,6 +23,49 @@ function reviewBox(it){
       </form>`;
 }
 
+
+/* ---------- menu pop-up: pick items, see a total, send them to the business as a message ---------- */
+const menuItems=it=>[].concat(...(it.menu||[]).map(g=>g.items.map(i=>({g:g.group,name:i.name,price:i.price}))));
+const priceNum=p=>{const m=String(p).match(/\d+(\.\d+)?/);return m?parseFloat(m[0]):0};
+const isRange=p=>(String(p).match(/\d+(\.\d+)?/g)||[]).length>1;
+const mnu=document.createElement('div');
+mnu.className='overlay';mnu.hidden=true;mnu.style.zIndex=80;
+mnu.innerHTML='<div class="sheet msel" role="dialog" aria-modal="true" aria-labelledby="mn-title"><div class="sheet-head"><h2 id="mn-title" tabindex="-1">Menu</h2><button class="x" id="mn-x" type="button" aria-label="Close menu">'+X_ICON+'</button></div><p class="hint" style="margin:8px 0 0">Tap what you want. We will put it in a message to the business.</p><div id="mn-body"></div><div class="mn-foot"><div><small>Your selection</small><b id="mn-total">Nothing yet</b></div><button class="btn pink" type="button" id="mn-send" disabled>Message with my selection</button></div></div>';
+document.body.appendChild(mnu);
+let mnPick=new Set(),mnOpener=null;
+function drawMenuPick(){
+  const all=menuItems(dcur);let idx=0;
+  $('mn-title').textContent=dcur.name+' menu';
+  $('mn-body').innerHTML=(dcur.menu||[]).map(g=>`${g.group?`<h4>${esc(g.group)}</h4>`:''}${g.items.map(i=>{const k=idx++,on=mnPick.has(k);return `<button class="mpick" type="button" data-k="${k}" aria-pressed="${on}"><span class="mbox" aria-hidden="true">${on?'&#10003;':''}</span><span class="mn">${esc(i.name)}</span><b>${esc(i.price)}</b></button>`}).join('')}`).join('');
+  const sel=[...mnPick].map(k=>all[k]).filter(Boolean);
+  const sum=sel.reduce((a,i)=>a+priceNum(i.price),0),rng=sel.some(i=>isRange(i.price));
+  $('mn-total').textContent=sel.length?`${sel.length} item${sel.length>1?'s':''} · ${rng?'from ':''}£${Number.isInteger(sum)?sum:sum.toFixed(2)}`:'Nothing yet';
+  $('mn-send').disabled=!sel.length;
+}
+function openMenu(btn){mnPick=new Set();mnOpener=btn;mnu.hidden=false;drawMenuPick();$('mn-title').focus()}
+function closeMenu(){mnu.hidden=true;if(mnOpener&&mnOpener.isConnected)mnOpener.focus()}
+mnu.addEventListener('click',e=>{
+  if(e.target===mnu||e.target.closest('#mn-x')){closeMenu();return}
+  const p=e.target.closest('.mpick');
+  if(p){const k=+p.dataset.k;mnPick.has(k)?mnPick.delete(k):mnPick.add(k);drawMenuPick();const n=$('mn-body').querySelector(`[data-k="${k}"]`);if(n)n.focus();return}
+  if(e.target.closest('#mn-send')){
+    const all=menuItems(dcur),sel=[...mnPick].map(k=>all[k]).filter(Boolean);
+    const sum=sel.reduce((a,i)=>a+priceNum(i.price),0),rng=sel.some(i=>isRange(i.price));
+    const text=`Hi! I'd like to book: ${sel.map(i=>`${i.name} (${i.price})`).join(', ')}. Total ${rng?'from ':''}£${Number.isInteger(sum)?sum:sum.toFixed(2)}. Are you free this week?`;
+    const id=dcur.id;closeMenu();startDM(id,$('open-menu'),text);
+  }
+});
+document.addEventListener('keydown',e=>{
+  if(mnu.hidden)return;
+  if(e.key==='Escape'){e.stopImmediatePropagation();closeMenu();return}
+  if(e.key!=='Tab')return;
+  const f=[...mnu.querySelectorAll('button')].filter(el=>!el.disabled&&el.offsetParent!==null);
+  if(!f.length)return;
+  const a=f[0],z=f[f.length-1];
+  if(e.shiftKey&&(document.activeElement===a||document.activeElement.id==='mn-title')){e.preventDefault();z.focus()}
+  else if(!e.shiftKey&&document.activeElement===z){e.preventDefault();a.focus()}
+},true);
+
 /* Highlights (full screen pop-ups) are built from listing.sections, plus listing.policy */
 const HLM={'Late fees':{i:'pound',c:'#FFD84D'},'Late policy':{i:'bell',c:'#FF6A9C'},'Hair policies':{i:'scissors',c:'#B9A8FF'}};
 function hlList(it){
@@ -54,13 +97,15 @@ function drawDetail(){
   $('dbody').removeAttribute('aria-busy');
   $('dtitle').textContent=it.name;
   const hls=hlList(it);
-  $('dbody').innerHTML=`<div class="dprof">${avatar(it,84)}<div><span class="svc">${esc(it.sub||it.cat)}</span><p class="dsub">${esc(it.cat)} service</p>
-    <div class="rate" style="margin-top:6px">${n?`${stars(avg,16)}<span>${avg.toFixed(1)} from ${n} review${n>1?'s':''}</span>`:'<span>No reviews yet</span>'}</div>
-    <button class="btn pink sm" type="button" data-dm="${esc(it.id)}" style="margin-top:10px">Message ${esc(it.name)}</button></div></div>
+  const cc=CAT[it.cat]||CAT.Other,own=USER&&it.ownerId===USER.id,items=menuItems(it);
+  $('dbody').innerHTML=`<div class="dcover" style="background:${cc.c}">${it.banner?`<img src="${esc(it.banner)}" alt="" decoding="async">`:`<span class="pat">${svg(ICONS[cc.i],64,1.4)}</span>`}</div>
+    <div class="dprof tw">${avatar(it,104)}<div class="dinfo"><span class="svc">${esc(it.sub||it.cat)}</span>
+    <div class="stat-line">${n?`<span>${stars(avg,16)} <b>${avg.toFixed(1)}</b> from ${n} review${n>1?'s':''}</span>`:'<span>No reviews yet</span>'}${it.kind==='services'?replyLine(it.avgResponseSeconds):''}</div>
+    ${own?'<p class="hint" style="margin:10px 0 0">This is your listing.</p>':`<button class="btn pink sm" type="button" data-dm="${esc(it.id)}" style="margin-top:10px">Message ${esc(it.name)}</button>`}</div></div>
     <p style="margin:12px 0 0">${esc(it.desc)}</p>
     <div class="meta" style="margin-top:10px">${(it.meta||[]).map(m=>`<span>${esc(m)}</span>`).join('')}</div>
     ${(it.photos||[]).length?`<div class="dphotos">${it.photos.map((p,i)=>`<button type="button" data-p="${i}" aria-label="View photo ${i+1}"><img src="${esc(p)}" alt=""></button>`).join('')}</div>`:''}
-    ${(it.menu||[]).some(g=>g.items.length)?`<div class="dsec"><h3>Menu and prices</h3>${menuHTML(it)}</div>`:''}
+    ${items.length?`<div class="dsec"><h3>Menu and prices</h3><button class="menubtn" type="button" id="open-menu" aria-haspopup="dialog"><span><b>Choose from the menu</b><small>${items.length} item${items.length>1?'s':''}${it.from?' · '+esc(it.from):''}</small></span><span class="go" aria-hidden="true">&rsaquo;</span></button></div>`:''}
     ${hls.length?`<div class="dsec"><h3>Highlights</h3><div class="hls" role="group" aria-label="Policies and fees. Opens full screen.">${hls.map((h,i)=>`<button class="hlb" type="button" data-hl="${i}" aria-haspopup="dialog"><span class="ring"><span class="in" style="background:${h.c}">${svg(ICONS[h.i],26,2)}</span></span><span>${esc(h.t)}</span></button>`).join('')}</div></div>`:''}
     <div class="dsec"><h3>Contact</h3><div class="contact" style="border:0;padding:0"><code>${esc(it.contact)}</code><button class="copy" type="button" data-copy="${esc(it.contact)}">Copy</button></div></div>
     <div class="dsec acc"><button class="acc-h" type="button" id="rev-t" aria-expanded="${revOpen}" aria-controls="rev-p"><span class="acc-n">Reviews</span><span class="acc-s">${n?`${stars(avg,14)} ${avg.toFixed(1)} (${n})`:'No reviews yet'}</span><svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
@@ -69,6 +114,7 @@ function drawDetail(){
         ${n?dRev.items.map(r=>`<div class="rv">${stars(r.rating)}<p>${esc(r.text)}</p><small>${esc(r.author)} · ${esc(relTime(r.createdAt))}${r.example?' · Example':r.verified?' · Verified appointment':''}${r.mine?' · Your review':''}</small></div>`).join(''):'<p style="color:var(--muted);margin:10px 0 0">Be the first to leave a review.</p>'}
         ${reviewBox(it)}
       </div></div>`;
+  const om=$('open-menu');if(om)om.addEventListener('click',()=>openMenu(om));
   const dd=$('demo-done');
   if(dd)dd.addEventListener('click',()=>requireLogin(async()=>{
     const done=busy(dd);
@@ -101,8 +147,8 @@ async function loadDetail(id){
     dcur=it;dRev=rev;drawDetail();
   }catch(e){if(seq===dseq)drawDetailError(errMsg(e),id)}
 }
-function openDetail(id){
-  dopen=id;dcur=null;dRev=null;revOpen=false;
+function openDetail(id,openReviews){
+  dopen=id;dcur=null;dRev=null;revOpen=!!openReviews;
   dov.hidden=false;document.body.style.overflow='hidden';
   dov.querySelector('.sheet').scrollTop=0;loadDetail(id);$('dtitle').focus();
 }
@@ -125,7 +171,7 @@ dov.addEventListener('click',e=>{
   const h=e.target.closest('[data-hl]');if(h&&dcur)openStory(+h.dataset.hl,h);
 });
 document.addEventListener('keydown',e=>{
-  if(dov.hidden||!lb.hidden||!sv.hidden||!mov.hidden||!aov.hidden)return;
+  if(dov.hidden||!lb.hidden||!sv.hidden||!mov.hidden||!aov.hidden||!mnu.hidden)return;
   if(e.key==='Escape'){closeDetail();return}
   if(e.key!=='Tab')return;
   const f=[...dov.querySelectorAll('button,input,select,textarea')].filter(el=>!el.disabled&&el.offsetParent!==null);

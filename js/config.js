@@ -11,5 +11,6 @@ window.BOARD_CONFIG = {
   useCookies: false,           // true = send cookies (HttpOnly session) instead of a Bearer token
   pollMs: null,                // how often to check for new messages. null = 4000 (1500 in mock mode)
   mockLatency: [120, 320],     // fake network delay in mock mode, in ms [min, max]
-  mockPersist: true            // keep mock data in this browser between refreshes
+  mockPersist: true,           // keep mock data in this browser between refreshes
+  demoLogins: true             // shows the "demo business account" shortcut on the login form. Set false in production
 };

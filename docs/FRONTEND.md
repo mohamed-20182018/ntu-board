@@ -9,7 +9,7 @@ node server/dev-server.js        # http://localhost:8787, real HTTP, saves to se
 ```
 Or just open `index.html` in a browser: it starts in **mock mode** with example data kept in that browser. Add `?resetmock` to the address to wipe it.
 
-Demo logins: sign up with any email. To see the business side, open Messages and switch to "Business owner" (demo: any signed-in user can act as any business).
+Demo logins: sign up with any email for a **student** account. For the **business** side, press Log in and use the demo business account link (owner@demo.test / demo1234, owns Fade Theory), or sign up and choose "A student running a business". Students and businesses get different dashboards and inboxes.
 
 ## Connect the real backend
 
@@ -25,7 +25,10 @@ Nothing else changes. Every network call goes through one object, `API` in `js/a
 
 | File | What it does |
 |---|---|
-| `index.html` | Page shell and script order |
+| `index.html` | Home: hero, top strip, browse (categories, types, filters) |
+| `how-it-works.html` | How it works, safety, questions |
+| `messages.html` | Messages page (inbox and chat) |
+| `js/ui-shell.js` | Header, footer and mobile menu shared by every page |
 | `css/styles.css` | All styling (dark and light follow the system) |
 | `js/config.js` | **The one place to switch mock / http and set the API address** |
 | `js/api.js` | API client: requests, tokens, errors, uploads. Same methods in both modes |
@@ -36,6 +39,7 @@ Nothing else changes. Every network call goes through one object, `API` in `js/a
 | `js/ui-register.js` | Register a business, society or notice (uploads + create) |
 | `js/ui-detail.js` | Business profile, reviews, photos, full-screen highlights |
 | `js/ui-messages.js` | Messages, unread badge, polling |
+| `js/ui-dashboard.js` | Student dashboard and business dashboard |
 | `js/main.js` | Start-up |
 | `server/dev-server.js` | Zero-dependency Node server for local testing |
 | `API.md` | The contract |

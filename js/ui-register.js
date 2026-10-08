@@ -12,8 +12,9 @@ const KINDS=[
 function openSheet(e){
   const btn=e&&e.currentTarget||document.activeElement;
   if(!USER){openAuth('up',()=>openSheet({currentTarget:btn}),btn);return}
+  if(USER.type!=='business'){askUpgrade(()=>openSheet({currentTarget:btn}),btn);return}
   opener=btn;
-  st={step:0,kind:null,name:'',cat:'',desc:'',meta:'',contact:'',agree:false,photos:[],pmsg:'',menu:'',policy:'',sub:'',avatar:null,up:0,posting:false,perr:'',result:null};
+  st={step:0,kind:null,name:'',cat:'',desc:'',meta:'',contact:'',agree:false,photos:[],pmsg:'',menu:'',policy:'',sub:'',avatar:null,banner:null,up:0,posting:false,perr:'',result:null};
   ov.hidden=false;document.body.style.overflow='hidden';draw();
 }
 function closeSheet(){ov.hidden=true;document.body.style.overflow='';if(opener&&opener.focus)opener.focus()}
@@ -52,6 +53,14 @@ async function pickAvatar(f){
   catch(e){st.pmsg=e&&e.status?errMsg(e):'That picture could not be read.'}
   st.up--;draw();$('r-avatar')&&$('r-avatar').focus();
 }
+async function pickBanner(f){
+  save();
+  if(!/^image\/(jpeg|png|webp)$/.test(f.type)||f.size>15e6){st.pmsg='Cover picture must be a JPG, PNG or WebP under 15MB.';draw();return}
+  st.up++;st.pmsg='Uploading cover…';draw();
+  try{const blob=await shrinkBanner(f);const r=await API.upload(blob,'banner');st.banner={id:r.id,url:r.url};st.pmsg=''}
+  catch(e){st.pmsg=e&&e.status?errMsg(e):'That picture could not be read.'}
+  st.up--;draw();$('r-banner')&&$('r-banner').focus();
+}
 async function pickPhotos(files){
   save();let msg='';st.up++;st.pmsg='Uploading…';draw();
   for(const f of files){
@@ -80,7 +89,10 @@ function draw(){
     stepEl.innerHTML=`<form id="f" novalidate>
       <div class="f"><label for="r-name">${soc?'Society name':off?'Notice title':'Business name'}</label><input type="text" id="r-name" maxlength="80" value="${esc(st.name)}" placeholder="${soc?'e.g. NTU Chess Society':off?'e.g. Reading week library hours':'e.g. Lashes by Zara'}"></div>
       <div class="f"><label for="r-cat">Category</label><select id="r-cat"><option value="">Choose one</option>${CATS[st.kind].map(c=>`<option ${st.cat===c?'selected':''}>${c}</option>`).join('')}</select></div>
-      ${svc?`<div class="f"><label for="r-sub">Type of service <span class="hint">what you do, e.g. Barbers or Braids</span></label><select id="r-sub"><option value="">Choose one</option>${subOpts()}</select></div>
+      ${svc?`<div class="f"><span class="lbl" id="bn-l">Cover picture <span class="hint">optional, the wide image at the top of your profile</span></span>
+        <div class="bnpick" style="background:${(CAT[st.cat]||CAT.Other).c}">${st.banner?`<img src="${esc(st.banner.url)}" alt="Your cover picture">`:''}</div>
+        <div class="avpick" style="margin-top:8px"><label class="addph"><input type="file" id="r-banner" accept="image/jpeg,image/png,image/webp" aria-describedby="bn-l"><span>${st.banner?'Change cover':'+ Add cover'}</span></label>${st.banner?'<button class="link" type="button" id="bn-rm">Remove</button>':''}</div></div>
+      <div class="f"><label for="r-sub">Type of service <span class="hint">what you do, e.g. Barbers or Braids</span></label><select id="r-sub"><option value="">Choose one</option>${subOpts()}</select></div>
       <div class="f"><span class="lbl" id="av-l">Profile picture <span class="hint">optional, a logo or a face. You can add one later.</span></span>
         <div class="avpick">${avatar({name:st.name||'You',cat:st.cat||'Other',avatar:st.avatar&&st.avatar.url},64)}<label class="addph"><input type="file" id="r-avatar" accept="image/jpeg,image/png,image/webp" aria-describedby="av-l"><span>${st.avatar?'Change picture':'+ Add picture'}</span></label>${st.avatar?'<button class="link" type="button" id="av-rm">Remove</button>':''}</div></div>`:''}
       <div class="f"><label for="r-desc">${soc?'What you get up to':off?'Details':'What you offer'} <span class="hint">(one or two lines)</span></label><textarea id="r-desc" maxlength="200">${esc(st.desc)}</textarea></div>
@@ -98,6 +110,8 @@ function draw(){
     if(svc){
       $('r-cat').addEventListener('change',()=>{save();st.sub='';draw();$('r-cat').focus()});
       $('r-avatar').addEventListener('change',e=>{const f=e.target.files[0];if(f)pickAvatar(f)});
+      $('r-banner').addEventListener('change',e=>{const f=e.target.files[0];if(f)pickBanner(f)});
+      const brm=$('bn-rm');if(brm)brm.addEventListener('click',()=>{save();st.banner=null;draw();$('r-banner').focus()});
       const rm=$('av-rm');if(rm)rm.addEventListener('click',()=>{save();st.avatar=null;draw();$('r-avatar').focus()});
     }
     $('r-photos').addEventListener('change',e=>{const files=[...e.target.files];if(files.length)pickPhotos(files)});
@@ -112,7 +126,7 @@ function draw(){
     });
   }else if(st.step===2){
     title.textContent='Here’s how it’ll look';
-    const item={id:'preview',kind:st.kind,name:st.name,cat:st.cat,sub:st.sub,desc:st.desc,meta:metaList(st.meta),contact:st.contact,preview:true,avatar:st.avatar&&st.avatar.url,photos:st.photos.map(p=>p.url),rating:null,reviewCount:0};
+    const item={id:'preview',kind:st.kind,name:st.name,cat:st.cat,sub:st.sub,desc:st.desc,meta:metaList(st.meta),contact:st.contact,preview:true,avatar:st.avatar&&st.avatar.url,banner:st.banner&&st.banner.url,photos:st.photos.map(p=>p.url),rating:null,reviewCount:0};
     stepEl.innerHTML=`<div class="preview-label">Preview</div><div style="pointer-events:none">${cardHTML(item)}</div>
       <label class="check" for="r-agree"><input type="checkbox" id="r-agree" ${st.agree?'checked':''}>I confirm these are real contact details and I understand the Board is a listings platform only. It doesn’t vet or endorse anyone’s product or service.</label>
       <p class="err" id="err2" role="alert" ${st.perr?'':'hidden'}>${esc(st.perr||'Tick the box to post your listing.')}</p>
@@ -124,7 +138,7 @@ function draw(){
       const done=busy(e.currentTarget,'Posting…');$('back2').disabled=true;
       try{
         st.result=await API.createListing({kind:st.kind,name:st.name.trim(),cat:st.cat,sub:st.sub||null,desc:st.desc.trim(),meta:metaList(st.meta),contact:st.contact.trim(),
-          menu:st.kind==='services'?parseMenu(st.menu):[],policy:st.policy.trim()||null,avatarId:st.avatar?st.avatar.id:null,photoIds:st.photos.map(p=>p.id)});
+          menu:st.kind==='services'?parseMenu(st.menu):[],policy:st.policy.trim()||null,avatarId:st.avatar?st.avatar.id:null,bannerId:st.banner?st.banner.id:null,photoIds:st.photos.map(p=>p.id)});
       }catch(err){
         done();$('back2').disabled=false;st.perr=errMsg(err);const er=$('err2');er.textContent=st.perr;er.hidden=false;return;
       }
@@ -139,7 +153,7 @@ function draw(){
       <p style="margin:0 0 6px;font-weight:700;font-size:18px">${esc(r.name||st.name)} ${pending?'is waiting for approval.':'is pinned.'}</p>
       <p style="margin:0;color:var(--muted)">${pending?'Once it has been approved it will show for every NTU student.':'Students can find it now.'}${API.isMock?' Demo: it is saved in this browser only.':''}</p>
       <div class="row-btns" style="justify-content:center"><button class="btn" type="button" id="see">${pending?'Done':'See my listing'}</button></div></div>`;
-    $('see').addEventListener('click',()=>{closeSheet();if(!pending)$('browse').scrollIntoView({behavior:'smooth'})});
+    $('see').addEventListener('click',()=>{closeSheet();if(pending)return;if($('browse'))$('browse').scrollIntoView({behavior:'smooth'});else location.href='index.html#browse'});
   }
   title.focus({preventScroll:true});
 }
