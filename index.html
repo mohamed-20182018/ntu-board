@@ -1030,7 +1030,7 @@ document.addEventListener('keydown',e=>{
 
 /* ---------- accounts: sign up and log in (demo, in memory) ---------- */
 /* Demo only: nothing is stored or verified and passwords are never kept.
-   The real site needs a backend that verifies the NTU email, hashes passwords and issues sessions. */
+   The real site needs a backend that verifies the email, hashes passwords and issues sessions. */
 const ACCOUNTS=[];let USER=null,afterAuth=null,aMode='up',aOpener=null;
 const aov=document.createElement('div');
 aov.className='overlay';aov.hidden=true;aov.style.zIndex=70;
@@ -1048,7 +1048,7 @@ function drawAuth(msg){
     <div class="mtog" role="group" aria-label="Sign up or log in" style="margin:14px 0"><button type="button" data-am="up" aria-pressed="${up}">Sign up</button><button type="button" data-am="in" aria-pressed="${!up}">Log in</button></div>
     <form id="a-form" novalidate>
       ${up?`<div class="f"><label for="a-name">Your name</label><input type="text" id="a-name" autocomplete="name" maxlength="40"></div>`:''}
-      <div class="f"><label for="a-email">NTU email <span class="hint">ends in ntu.ac.uk</span></label><input type="text" inputmode="email" id="a-email" autocomplete="email" placeholder="n1234567@my.ntu.ac.uk"></div>
+      <div class="f"><label for="a-email">Email</label><input type="text" inputmode="email" id="a-email" autocomplete="email" placeholder="you@example.com"></div>
       <div class="f"><label for="a-pw">Password ${up?'<span class="hint">at least 8 characters</span>':''}</label><input type="password" id="a-pw" autocomplete="${up?'new-password':'current-password'}"></div>
       ${up?`<div class="f"><label for="a-type">I'm joining as</label><select id="a-type"><option value="student">A student looking for services</option><option value="business">A student running a business or society</option></select></div>
       <label class="check" for="a-agree"><input type="checkbox" id="a-agree">I understand the Board is a listings platform only and is not an official NTU or NTSU service.</label>`:''}
@@ -1071,7 +1071,7 @@ aov.addEventListener('submit',e=>{
   const name=up?$('a-name').value.trim():'';
   const miss=[];
   if(up&&!name)miss.push('your name');
-  if(!/^[^\s@]+@([a-z0-9-]+\.)*ntu\.ac\.uk$/.test(email))miss.push('a valid NTU email ending in ntu.ac.uk');
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email))miss.push('a valid email address');
   if(pw.length<8)miss.push('a password of at least 8 characters');
   if(up&&!$('a-agree').checked)miss.push('your agreement to continue');
   if(miss.length){const keep=[name,email];drawAuth('Add '+miss.join(', ')+'.');if(up)$('a-name').value=keep[0];$('a-email').value=keep[1];(up?$('a-name'):$('a-email')).focus();return}
