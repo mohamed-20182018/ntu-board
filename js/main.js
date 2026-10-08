@@ -13,4 +13,5 @@
   let restored=false;
   if(API.hasToken()){try{setUser(await API.me());restored=true}catch(_){}}
   if(!restored&&typeof initMessagesPage==='function')initMessagesPage();
+  if(!restored&&typeof loadProfile==='function')loadProfile();
 })();

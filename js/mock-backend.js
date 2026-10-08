@@ -38,15 +38,16 @@
     constructor(opts) {
       this.opts = Object.assign({ state: null, onChange: null, demoActAsAnyOwner: false, autoReply: true }, opts || {});
       this.s = this.opts.state || this._seed();
+      this.s.lateFees = this.s.lateFees || [];
     }
 
     _seed() {
       const now = Date.now();
-      const s = { seq: 1, users: [], sessions: {}, listings: [], reviews: [], threads: [], messages: [], appointments: [], uploads: {}, reports: [] };
-      const mkUser = (id, name, email, type, pw) => s.users.push({ id, name, email, type, salt: 'x', hash: toyHash('x', pw || rid('seed')) });
+      const s = { seq: 1, users: [], sessions: {}, listings: [], reviews: [], threads: [], messages: [], appointments: [], uploads: {}, reports: [], lateFees: [] };
+      const mkUser = (id, name, email, type, pw, bio) => s.users.push({ id, name, email, type, bio: bio || '', avatarId: null, createdAt: new Date(now - 90 * DAY).toISOString(), salt: 'x', hash: toyHash('x', pw || rid('seed')) });
       mkUser('u_owner', 'Demo Owner', 'owner@demo.test', 'business', 'demo1234');   // demo login for the business side
-      mkUser('u_maya', 'Maya Q.', 'maya@demo.test', 'student');
-      mkUser('u_jaden', 'Jaden M.', 'jaden@demo.test', 'student');
+      mkUser('u_maya', 'Maya Q.', 'maya@demo.test', 'student', null, 'Second year, always booking for my brother too.');
+      mkUser('u_jaden', 'Jaden M.', 'jaden@demo.test', 'student', null, 'Fresh cut every two weeks.');
       mkUser('u_sam', 'Sam L.', 'sam@demo.test', 'student');
       let order = 0;
       for (const kind of ['services', 'socs', 'official']) {
@@ -68,6 +69,9 @@
       th('th_seed3', 'u_sam', [{ f: 'client', t: 'What do you charge for a taper and beard trim?', at: mins(3000) }, { f: 'business', t: 'Taper £25 plus £5 for the beard trim, so £30.', at: mins(2988) }], 0);
       s.threads[1].completed = true;
       s.appointments.push({ userId: 'u_jaden', listingId: fade, at: mins(2000) });
+      /* example late fees: Jaden paid his, Maya's is still unpaid (a default) */
+      s.lateFees.push({ id: 'lf_seed1', userId: 'u_jaden', listingId: fade, threadId: 'th_seed2', amount: 5, minutes: 12, status: 'paid', createdAt: mins(1990) });
+      s.lateFees.push({ id: 'lf_seed2', userId: 'u_maya', listingId: fade, threadId: 'th_seed1', amount: 10, minutes: 18, status: 'unpaid', createdAt: mins(20000) });
       return s;
     }
 
@@ -126,6 +130,36 @@
       if (method === 'POST' && (p = m(/^\/threads\/([^/]+)\/messages$/))) return this._send(this._auth(user), p[0], b, q.as || b.as);
       if (method === 'POST' && (p = m(/^\/threads\/([^/]+)\/read$/))) { const { t, role } = this._thread(p[0], this._auth(user), q.as); t.unread[role] = 0; this._changed(); return { status: 204 }; }
       if (method === 'POST' && (p = m(/^\/threads\/([^/]+)\/complete$/))) return this._complete(this._auth(user), p[0], q.as);
+      if (method === 'GET' && path === '/me/profile') return { body: this._profile(this._auth(user), true) };
+      if (method === 'POST' && path === '/me/profile') {
+        const u = this._auth(user), name = b.name === undefined ? u.name : str(b.name, 40), bio = b.bio === undefined ? u.bio : str(b.bio, 300);
+        if (!name) throw bad('Add your name.');
+        if (b.avatarId !== undefined) { if (b.avatarId && !(this.s.uploads[b.avatarId] && this.s.uploads[b.avatarId].ownerId === u.id)) throw bad('Upload the picture again.'); u.avatarId = b.avatarId || null; }
+        u.name = name; u.bio = bio; this._changed();
+        return { body: this._profile(u, true) };
+      }
+      if (method === 'GET' && (p = m(/^\/users\/([^/]+)$/))) {
+        this._auth(user); const u = this.s.users.find(x => x.id === p[0]); need(u, 404, 'not_found', 'That person does not exist.');
+        return { body: this._profile(u, u.id === user.id) };
+      }
+      if (method === 'POST' && (p = m(/^\/threads\/([^/]+)\/late-fee$/))) {
+        const { t, l, role } = this._thread(p[0], this._auth(user), q.as);
+        need(role === 'business' && this._owns(user, l), 403, 'forbidden', 'Only the business can add a late fee.');
+        const amount = Math.round(parseFloat(b.amount) * 100) / 100, minutes = parseInt(b.minutes, 10) || null;
+        if (!(amount > 0 && amount <= 100)) throw bad('Enter a late fee between £1 and £100.');
+        const f = { id: rid('lf'), userId: t.clientId, listingId: l.id, threadId: t.id, amount, minutes, status: 'unpaid', createdAt: new Date().toISOString() };
+        this.s.lateFees.push(f);
+        this._addMsg(t, 'system', `${l.name} added a late fee of £${amount}${minutes ? ` for arriving ${minutes} minutes late` : ''}. Unpaid late fees show on your profile.`, { lateFeeId: f.id });
+        t.unread.client++; this._changed();
+        return { status: 201, body: { lateFee: this._feeView(f) } };
+      }
+      if (method === 'POST' && (p = m(/^\/late-fees\/([^/]+)$/))) {
+        const u = this._auth(user), f = this.s.lateFees.find(x => x.id === p[0]); need(f, 404, 'not_found', 'That late fee does not exist.');
+        need(this._owns(u, this._listing(f.listingId)), 403, 'forbidden', 'Only the business can update a late fee.');
+        need(['paid', 'waived', 'unpaid'].includes(b.status), 400, 'validation_failed', 'Status must be paid, waived or unpaid.');
+        f.status = b.status; this._changed();
+        return { body: { lateFee: this._feeView(f) } };
+      }
       if (method === 'POST' && (p = m(/^\/threads\/([^/]+)\/report$/))) { const { t } = this._thread(p[0], this._auth(user), q.as); this.s.reports.push({ threadId: t.id, by: user.id, reason: str(b.reason, 200), at: new Date().toISOString() }); this._changed(); return { status: 204 }; }
 
       if (method === 'POST' && path === '/demo/appointments') { // mock only
@@ -139,7 +173,20 @@
     /* ---------- auth ---------- */
     _user(token) { const id = token && this.s.sessions[token]; return id ? this.s.users.find(u => u.id === id) || null : null; }
     _auth(user) { need(user, 401, 'unauthenticated', 'Log in to continue.'); return user; }
-    _pubUser(u) { return { id: u.id, name: u.name, email: u.email, type: u.type }; }
+    _pubUser(u) { return { id: u.id, name: u.name, email: u.email, type: u.type, avatar: this._url(u.avatarId), bio: u.bio || '', createdAt: u.createdAt || null }; }
+    /* Profile numbers. A late fee "default" is a late fee the student has not paid. */
+    _userStats(uid) {
+      const fees = this.s.lateFees.filter(f => f.userId === uid);
+      return { appointments: this.s.appointments.filter(a => a.userId === uid).length, reviews: this.s.reviews.filter(r => r.userId === uid).length,
+        lateFees: fees.length, lateFeeDefaults: fees.filter(f => f.status === 'unpaid').length };
+    }
+    _feeView(f) { const l = this.s.listings.find(x => x.id === f.listingId); return { id: f.id, listingId: f.listingId, listingName: l ? l.name : 'Business', amount: f.amount, minutes: f.minutes, status: f.status, createdAt: f.createdAt }; }
+    _profile(u, self) {
+      const out = { user: Object.assign(this._pubUser(u), self ? {} : { email: undefined }), stats: this._userStats(u.id) };
+      if (self) out.lateFees = this.s.lateFees.filter(f => f.userId === u.id).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).map(f => this._feeView(f));
+      if (u.type === 'business') out.listings = this.s.listings.filter(l => l.ownerId === u.id && l.status === 'live').map(l => this._summary(l));
+      return out;
+    }
     _session(u) { const token = 'tok_' + rid('s') + rid('s'); this.s.sessions[token] = u.id; this._changed(); return { user: this._pubUser(u), token }; }
     _signup(b) {
       const name = str(b.name, 40), email = str(b.email, 120).toLowerCase(), pw = typeof b.password === 'string' ? b.password : '';
@@ -149,7 +196,7 @@
       if (pw.length < 8) miss.push('a password of at least 8 characters');
       if (miss.length) throw bad('Add ' + miss.join(', ') + '.');
       if (this.s.users.some(u => u.email === email)) throw new HttpError(409, 'conflict', 'That email already has an account. Log in instead.');
-      const u = { id: 'u_' + (++this.s.seq) + rid('').slice(0, 5), name, email, type: b.type === 'business' ? 'business' : 'student', salt: rid('salt'), hash: '' };
+      const u = { id: 'u_' + (++this.s.seq) + rid('').slice(0, 5), name, email, type: b.type === 'business' ? 'business' : 'student', bio: '', avatarId: null, createdAt: new Date().toISOString(), salt: rid('salt'), hash: '' };
       u.hash = toyHash(u.salt, pw); this.s.users.push(u);
       return { status: 201, body: this._session(u) };
     }
@@ -322,7 +369,8 @@
       const l = this._listing(t.listingId), c = this.s.users.find(u => u.id === t.clientId), ms = this._msgs(t.id), last = ms.filter(m => m.type !== 'system').slice(-1)[0] || ms[ms.length - 1] || null;
       const st = this._stats(l);
       return { id: t.id, listingId: l.id, listingName: l.name, listingCat: l.cat, listingSub: l.sub || null, listingAvatar: this._url(l.avatarId), listingRating: st.avg == null ? null : Math.round(st.avg * 10) / 10, listingReviewCount: st.count, avgResponseSeconds: this._resp(l.id), clientId: t.clientId, clientName: c ? c.name : 'Student',
-        lastMessage: last ? { id: last.id, from: last.from, text: last.text, createdAt: last.createdAt } : null, unread: t.unread[role] || 0, appointmentCompleted: !!t.completed || this._hasAppt(t.clientId, l.id) };
+        lastMessage: last ? { id: last.id, from: last.from, text: last.text, createdAt: last.createdAt } : null, unread: t.unread[role] || 0, clientAvatar: c ? this._url(c.avatarId) : null, clientLateFeeDefaults: this._userStats(t.clientId).lateFeeDefaults,
+        lateFees: this.s.lateFees.filter(f => f.threadId === t.id).map(f => this._feeView(f)), appointmentCompleted: !!t.completed || this._hasAppt(t.clientId, l.id) };
     }
     _threads(user, q) {
       const as = q.as === 'business' ? 'business' : 'client';

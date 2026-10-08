@@ -6,7 +6,7 @@ const mpage=$('msheet');
 const mov={hidden:true};   /* kept so other screens' "is messages open?" checks still work */
 
 /* mode 's' = I am the student (client). mode 'b' = I run the business. */
-const M={draft:'',cl:false,mode:'s',th:[],cur:null,curT:null,msgs:[],owns:[],own:null,loading:false,err:'',sig:'',unread:0,seq:0,opener:null,tmp:0};
+const M={feeForm:false,draft:'',cl:false,mode:'s',th:[],cur:null,curT:null,msgs:[],owns:[],own:null,loading:false,err:'',sig:'',unread:0,seq:0,opener:null,tmp:0};
 const asOf=()=>M.mode==='s'?'client':'business';
 const meFrom=()=>M.mode==='s'?'client':'business';
 
@@ -21,8 +21,8 @@ async function refreshBadge(){
 }
 function closeMsgIfOpen(){M.owns=[];M.own=null;M.th=[];M.cur=null;M.curT=null;M.msgs=[];refreshBadgeCount(0);if(mpage)drawSignedOut()}
 
-const sigOf=()=>JSON.stringify([M.mode,M.cur,M.loading,M.cl,M.err,M.th.map(t=>[t.id,t.unread,t.lastMessage&&t.lastMessage.id]),M.msgs.map(m=>m.id+(m.sending?'~':'')),M.curT&&M.curT.appointmentCompleted]);
-const other=t=>M.mode==='s'?{name:t.listingName,cat:t.listingCat,avatar:t.listingAvatar}:{name:t.clientName,cat:'Other'};
+const sigOf=()=>JSON.stringify([M.mode,M.cur,M.loading,M.cl,M.err,M.th.map(t=>[t.id,t.unread,t.lastMessage&&t.lastMessage.id]),M.msgs.map(m=>m.id+(m.sending?'~':'')),M.curT&&M.curT.appointmentCompleted,M.feeForm,M.curT&&(M.curT.lateFees||[]).map(f=>f.status)]);
+const other=t=>M.mode==='s'?{name:t.listingName,cat:t.listingCat,avatar:t.listingAvatar}:{name:t.clientName,cat:'Other',avatar:t.clientAvatar};
 
 function drawMsg(force){
   const sig=sigOf();if(!force&&sig===M.sig)return;M.sig=sig;
@@ -44,11 +44,12 @@ function drawMsg(force){
     const o=other(cur);
     const sub=M.mode==='s'
       ?`<small>${esc(cur.listingSub||cur.listingCat)}</small><span class="mstats">${cur.listingReviewCount&&cur.listingRating!=null?`${stars(cur.listingRating,12)}<span>${cur.listingRating.toFixed(1)} (${cur.listingReviewCount})</span>`:'<span>No reviews yet</span>'}${replyLine(cur.avgResponseSeconds)}</span>`
-      :`<small>Customer${cur.appointmentCompleted?' · appointment complete':''}</small>`;
-    chat=`<div class="mchat"><div class="mchead rich"><button class="x mback" id="m-back" type="button" aria-label="Back to conversations">&#8249;</button>${avatar({name:o.name,cat:o.cat,avatar:o.avatar},M.mode==='s'?52:40)}<div class="mwho"><b>${esc(o.name)}</b>${sub}</div>
-      ${M.mode==='s'?`<button class="btn sm ghost" type="button" id="m-prof">Profile</button>`:`<button class="btn sm" type="button" id="m-done" ${cur.appointmentCompleted?'disabled':''}>${cur.appointmentCompleted?'Appointment complete':'Mark appointment complete'}</button>`}
+      :`<small>Customer${cur.appointmentCompleted?' · appointment complete':''} · ${cur.clientLateFeeDefaults?`<span class="chip fee-unpaid">${cur.clientLateFeeDefaults} late fee ${cur.clientLateFeeDefaults===1?'default':'defaults'}</span>`:'no late fee defaults'}</small>`;
+    chat=`<div class="mchat"><div class="mchead rich"><button class="x mback" id="m-back" type="button" aria-label="Back to conversations">&#8249;</button>${avatar({name:o.name,cat:o.cat,avatar:o.avatar},M.mode==='s'?52:40)}<div class="mwho"><b>${M.mode==='b'?`<a href="profile.html?u=${esc(cur.clientId)}">${esc(o.name)}</a>`:esc(o.name)}</b>${sub}</div>
+      ${M.mode==='s'?`<button class="btn sm ghost" type="button" id="m-prof">Profile</button>`:`<button class="btn sm ghost" type="button" id="m-fee" aria-expanded="${M.feeForm}">Add late fee</button><button class="btn sm" type="button" id="m-done" ${cur.appointmentCompleted?'disabled':''}>${cur.appointmentCompleted?'Appointment complete':'Mark appointment complete'}</button>`}
       <button class="link" type="button" id="m-rep">Report</button></div>
-      <div class="mmsgs" id="m-log" role="log" aria-live="polite" aria-label="Conversation with ${esc(o.name)}">${M.cl?'<div class="sk" style="height:40px;width:60%;margin:8px 0" aria-hidden="true"></div><div class="sk" style="height:40px;width:45%;margin:8px 0 8px auto" aria-hidden="true"></div>':M.msgs.length?M.msgs.map(m=>m.from==='system'?`<div class="msys">${esc(m.text)}</div>`:`<div class="mb ${m.from===me?'me':'them'}${m.sending?' sending':''}"><span>${esc(m.text)}</span><small>${m.sending?'Sending…':esc(msgTime(m.createdAt))}${m.auto?' · Demo reply':''}</small></div>`).join(''):'<div class="msys">Say hello. Ask about prices, availability or booking.</div>'}</div>
+      ${M.mode==='b'&&M.feeForm?`<form class="feeform" id="m-feeform"><label class="fsel"><span>Late fee</span><select id="fee-amt">${[5,10,15,20].map(a=>`<option value="${a}">£${a}</option>`).join('')}</select></label><label class="fsel"><span>Minutes late</span><input type="number" id="fee-min" min="1" max="180" inputmode="numeric" placeholder="e.g. 15"></label><button class="btn pink sm" type="submit">Add</button><button class="link" type="button" id="fee-cancel">Cancel</button></form>`:''}
+      <div class="mmsgs" id="m-log" role="log" aria-live="polite" aria-label="Conversation with ${esc(o.name)}">${M.cl?'<div class="sk" style="height:40px;width:60%;margin:8px 0" aria-hidden="true"></div><div class="sk" style="height:40px;width:45%;margin:8px 0 8px auto" aria-hidden="true"></div>':M.msgs.length?M.msgs.map(m=>m.from==='system'?sysMsgHTML(m):`<div class="mb ${m.from===me?'me':'them'}${m.sending?' sending':''}"><span>${esc(m.text)}</span><small>${m.sending?'Sending…':esc(msgTime(m.createdAt))}${m.auto?' · Demo reply':''}</small></div>`).join(''):'<div class="msys">Say hello. Ask about prices, availability or booking.</div>'}</div>
       ${M.mode==='s'?`<div class="mq">${['Are you free this week?','What is your price for this?','Can I reschedule?'].map(x=>`<button type="button" class="chipbtn" data-q="${esc(x)}">${esc(x)}</button>`).join('')}</div>`:''}
       <form class="mform" id="m-form"><label class="sr" for="m-in">Message</label><input type="text" id="m-in" maxlength="500" autocomplete="off" placeholder="Write a message"><button class="btn pink" type="submit">Send</button></form>
       <p class="hint mnote">Keep chats on the Board. Never share card or bank details.${API.isMock?' Demo: messages stay in this browser.':''}</p></div>`;
@@ -60,6 +61,14 @@ function drawMsg(force){
   const lg=$('m-log');if(lg)lg.scrollTop=atBottom?lg.scrollHeight:prevTop;
   const rt=$('m-retry');if(rt)rt.addEventListener('click',()=>loadThreads());
 }
+
+/* System notices. Late fee notices show their status, and the business can mark them paid or waived. */
+function sysMsgHTML(m){
+  const f=m.lateFeeId&&M.curT&&(M.curT.lateFees||[]).find(x=>x.id===m.lateFeeId);
+  if(!f)return `<div class="msys">${esc(m.text)}</div>`;
+  return `<div class="msys fee">${esc(m.text)} <span class="chip fee-${f.status}">${f.status==='unpaid'?'Unpaid':f.status==='paid'?'Paid':'Waived'}</span>${M.mode==='b'&&f.status==='unpaid'?` <button class="link" type="button" data-fee="${esc(f.id)}" data-st="paid">Mark paid</button> <button class="link" type="button" data-fee="${esc(f.id)}" data-st="waived">Waive</button>`:''}</div>`;
+}
+async function reloadChat(id){try{const r=await API.thread(id,asOf());if(M.cur===id){M.curT=r.thread;M.msgs=r.messages}}catch(e){say(errMsg(e))}drawMsg(true)}
 
 /* ---------- data ---------- */
 async function loadOwns(){
@@ -185,6 +194,10 @@ if(mpage)mpage.addEventListener('click',async e=>{
     return;
   }
   if(t.closest('#m-prof')){openDetail(M.curT.listingId);return}
+  if(t.closest('#m-fee')){M.feeForm=!M.feeForm;drawMsg(true);if(M.feeForm)$('fee-amt').focus();return}
+  if(t.closest('#fee-cancel')){M.feeForm=false;drawMsg(true);$('m-fee').focus();return}
+  const fb=t.closest('[data-fee]');
+  if(fb){const done=busy(fb);try{await API.setLateFee(fb.dataset.fee,fb.dataset.st);say(fb.dataset.st==='paid'?'Marked as paid':'Late fee waived');await reloadChat(M.cur)}catch(err){done();say(errMsg(err))}return}
   const dn=t.closest('#m-done');
   if(dn){
     const id=M.cur,done=busy(dn,'Saving…');
@@ -197,7 +210,12 @@ if(mpage)mpage.addEventListener('click',async e=>{
   }
 });
 if(mpage)mpage.addEventListener('change',e=>{if(e.target.id==='m-own'){M.own=e.target.value;M.cur=null;M.curT=null;M.msgs=[];M.th=[];loadThreads().then(()=>{const s=$('m-own');if(s)s.focus()})}});
-if(mpage)mpage.addEventListener('submit',e=>{e.preventDefault();if(e.target.id==='m-form'){const v=$('m-in').value;$('m-in').value='';mSend(v);$('m-in').focus()}});
+if(mpage)mpage.addEventListener('submit',async e=>{e.preventDefault();
+  if(e.target.id==='m-feeform'){
+    const id=M.cur,done=busy(e.target.querySelector('button[type=submit]'),'Adding…');
+    try{await API.addLateFee(id,+$('fee-amt').value,+$('fee-min').value||null,asOf());M.feeForm=false;say('Late fee added');await reloadChat(id)}catch(err){done();say(errMsg(err))}
+    return;
+  }if(e.target.id==='m-form'){const v=$('m-in').value;$('m-in').value='';mSend(v);$('m-in').focus()}});
 setInterval(pollTick,API.pollMs);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)pollTick()});
 

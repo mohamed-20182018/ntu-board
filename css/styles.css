@@ -603,3 +603,39 @@ textarea{resize:vertical;min-height:84px}
 .pc-pause{margin-left:auto;border:2px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:6px 14px;font:inherit;font-weight:700;font-size:13px;cursor:pointer}
 .pc-pause:focus-visible{outline:3px solid var(--pink);outline-offset:2px}
 .pc .pinfo h3{margin:0}
+
+/* ===== Profile ===== */
+.authnav a.me{color:inherit;text-decoration:none;border:2px solid transparent;border-radius:999px;padding:3px 10px 3px 3px}
+.authnav a.me:hover,.authnav a.me[aria-current="page"]{border-color:var(--line);background:var(--chip)}
+.authnav a.me:focus-visible{outline:3px solid var(--pink);outline-offset:2px}
+.pf-wrap{padding-block:28px 0;max-width:880px}
+.pf-card{border:2px solid var(--line);border-radius:32px;background:var(--surface);box-shadow:6px 6px 0 var(--shadow);overflow:hidden}
+.pf-cover{height:120px;background:var(--butter);border-bottom:2px solid var(--line)}
+.pf-cover.biz{background:var(--mint)}
+.pf-head{display:flex;align-items:flex-start;gap:16px;padding:0 24px;flex-wrap:wrap}
+.pf-head>.av{margin-top:-56px}
+.pf-who{padding-top:14px}
+.pf-head>.btn{margin-top:14px}
+.pf-head .av{border-width:4px;border-color:var(--surface);box-shadow:0 0 0 2px var(--line)}
+.pf-who{flex:1;min-width:200px;padding-bottom:4px}
+.pf-who h1{font-size:clamp(26px,4vw,38px);font-weight:900;letter-spacing:-.03em;outline:none;margin:0}
+.pf-who p{margin:6px 0 0;display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.pf-who .dash-role{margin:0}
+.pf-head .btn{margin-bottom:8px}
+.pf-bio{padding:16px 24px 24px;margin:0;font-size:17px;max-width:62ch}
+.pf-bio.empty{color:var(--muted)}
+.pf-h{font-size:20px;font-weight:900;letter-spacing:-.02em;margin:0 0 4px}
+.stat.bad{background:color-mix(in srgb,var(--pink) 22%,var(--surface))}
+.stat.good b{color:inherit}
+.pf-note{margin:0}
+.pf-links{display:flex;gap:10px;flex-wrap:wrap;margin-top:24px}
+.pf-edit{padding:24px;display:grid;gap:4px}
+.pf-edit h1{font-size:28px;font-weight:900;letter-spacing:-.03em;outline:none;margin-bottom:10px}
+.chip.fee-unpaid{background:var(--pink);color:var(--onpop)}
+.chip.fee-paid{background:var(--mint);color:var(--onpop)}
+.chip.fee-waived{background:var(--chip)}
+.mwho a{color:inherit}
+.feeform{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:10px 16px;border-bottom:2px solid var(--line);background:var(--chip)}
+.feeform input{width:90px;border:2px solid var(--line);border-radius:999px;padding:7px 12px;background:var(--surface);color:var(--ink);font:inherit}
+.msys.fee .chip{font-size:10px;padding:1px 7px;margin-left:4px}
+.msys .link{font-size:12px}

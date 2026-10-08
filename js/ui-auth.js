@@ -7,10 +7,10 @@ document.body.appendChild(aov);
 
 function renderAuth(){
   $('auth-nav').innerHTML=USER
-    ?`<span class="me">${avatar({name:USER.name,cat:'Other'},28)}<span>Hi, ${esc(USER.name.split(' ')[0])}</span></span><button class="navbtn" type="button" data-auth="out">Log out</button>`
+    ?`<a class="me" href="profile.html" title="Your profile"${document.body.dataset.page==='profile'&&!location.search.includes('u=')?' aria-current="page"':''}>${avatar({name:USER.name,cat:'Other',avatar:USER.avatar},28)}<span>${esc(USER.name.split(' ')[0])}</span></a><button class="navbtn" type="button" data-auth="out">Log out</button>`
     :`<button class="navbtn" type="button" data-auth="in">Log in</button><button class="btn" type="button" data-auth="up">Sign up</button>`;
 }
-function setUser(u){USER=u;renderAuth();$('open-dash').hidden=!u;if(typeof refreshBadge==='function')refreshBadge();if(typeof initMessagesPage==='function')initMessagesPage()}
+function setUser(u){USER=u;renderAuth();$('open-dash').hidden=!u;if(typeof refreshBadge==='function')refreshBadge();if(typeof initMessagesPage==='function')initMessagesPage();if(typeof loadProfile==='function')loadProfile()}
 
 function drawAuth(msg,keep){
   keep=keep||{};

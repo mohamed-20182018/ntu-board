@@ -200,6 +200,19 @@ All thread routes require auth. A user may touch a thread only if they are its c
 
 `POST /threads/:id/report` body `{ reason? }`. Flags the conversation for moderators. `204`.
 
+### Profiles and late fees
+`GET /me/profile` (auth) returns `{ user, stats, lateFees, listings? }`. `user` has `bio`, `avatar`, `createdAt`. `stats` is `{ appointments, reviews, lateFees, lateFeeDefaults }`. A late fee **default** is a late fee that is still `unpaid`. `lateFees` is the user's own history: `[{ id, listingId, listingName, amount, minutes, status: "unpaid"|"paid"|"waived", createdAt }]`. `listings` is only for business accounts.
+
+`POST /me/profile` (auth) body `{ name?, bio? (max 300), avatarId? }` (an upload with purpose `avatar`, or null to remove). Returns the same shape as `GET /me/profile`.
+
+`GET /users/:id` (auth) returns someone's public profile: `{ user (no email), stats, listings? }`. No late fee history, just the counts. Businesses open this from a customer chat.
+
+`POST /threads/:id/late-fee` (listing owner only) body `{ amount: 1-100, minutes? }`. Adds an `unpaid` late fee for that customer and a system message with `lateFeeId`. Returns `201 { lateFee }`.
+
+`POST /late-fees/:id` (listing owner only) body `{ status: "paid"|"waived"|"unpaid" }`. Returns `{ lateFee }`.
+
+Threads also carry `clientAvatar`, `clientLateFeeDefaults` (so a business sees a customer's record in the chat header) and `lateFees` (the fees on that chat). System messages about a late fee carry `lateFeeId`. `User` objects now include `avatar`, `bio`, `createdAt`.
+
 ## Rules the server must enforce
 
 The front end hides buttons, but anyone can call the API directly.
