@@ -527,7 +527,7 @@ textarea{resize:vertical;min-height:84px}
 
 /* ===== Browse first ===== */
 .browse.first{padding-top:36px}
-.browse-head h1{font-size:clamp(40px,7.5vw,84px);font-weight:900;letter-spacing:-.045em;line-height:.95}
+
 .browse-head p{font-size:18px}
 
 /* ===== Sponsored placements ===== */
