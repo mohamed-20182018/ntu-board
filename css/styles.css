@@ -511,3 +511,16 @@ textarea{resize:vertical;min-height:84px}
 .reco-grid{margin-top:20px}
 .near{display:inline-flex;align-items:center;gap:6px;margin:0 0 12px;font-weight:700;font-size:14px}
 .near::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--mint);border:1.5px solid var(--line)}
+
+/* ===== Whole card opens the profile ===== */
+.card{position:relative;transition:transform .12s ease,box-shadow .12s ease}
+.cardlink{all:unset;cursor:pointer}
+.cardlink::after{content:"";position:absolute;inset:0;z-index:1;border-radius:inherit}
+.card .shot,.card .copy,.card .ex,.card .pc{z-index:2}
+.card .copy{position:relative}
+.card:has(.cardlink):hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--shadow)}
+.card:has(.cardlink:focus-visible){outline:3px solid var(--pink);outline-offset:3px}
+.card .near{display:inline-flex;align-items:center;gap:6px;margin:2px 0 0;font-weight:700;font-size:14px;color:var(--ink)}
+.card .near::before{content:none}
+.card .near svg{color:var(--pink)}
+@media (prefers-reduced-motion:reduce){.card{transition:none}.card:has(.cardlink):hover{transform:none}}

@@ -224,9 +224,11 @@
       let rows = base.filter(l => !q.sub || l.sub === q.sub);
       const price = l => { const f = this._from(l); return f ? parseFloat(f.replace(/[^\d.]/g, '')) : Infinity; };
       const rate = l => this._stats(l).avg || 0, cnt = l => this._stats(l).count, reply = l => { const r = this._resp(l.id); return r == null ? Infinity : r; };
-      const sorts = { top: (a, b) => rate(b) - rate(a) || cnt(b) - cnt(a), price: (a, b) => price(a) - price(b), reviews: (a, b) => cnt(b) - cnt(a), reply: (a, b) => reply(a) - reply(b) };
+      const here = !isNaN(parseFloat(q.lat)) && !isNaN(parseFloat(q.lng)) ? [parseFloat(q.lat), parseFloat(q.lng)] : null;
+      const dist = l => here && AREAS[l.area] ? km(here, AREAS[l.area]) : null;
+      const sorts = { near: (a, b) => (dist(a) == null ? 1e9 : dist(a)) - (dist(b) == null ? 1e9 : dist(b)), top: (a, b) => rate(b) - rate(a) || cnt(b) - cnt(a), price: (a, b) => price(a) - price(b), reviews: (a, b) => cnt(b) - cnt(a), reply: (a, b) => reply(a) - reply(b) };
       if (sorts[q.sort]) rows = rows.slice().sort(sorts[q.sort]);
-      return { body: { items: rows.slice(offset, offset + limit).map(l => this._summary(l)), total: rows.length, facets: { subs } } };
+      return { body: { items: rows.slice(offset, offset + limit).map(l => Object.assign(this._summary(l), { distanceKm: dist(l) == null ? null : Math.round(dist(l) * 10) / 10 })), total: rows.length, facets: { subs } } };
     }
     _create(user, b) {
       const kind = b.kind;

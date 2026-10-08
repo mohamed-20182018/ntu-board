@@ -95,3 +95,12 @@ const CLOCK_ICON='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" st
 const replyLine=sec=>sec==null?'<span class="rtime">'+CLOCK_ICON+'New here, no replies yet</span>':'<span class="rtime">'+CLOCK_ICON+'Replies in about '+fmtReply(sec)+'</span>';
 /* Wide cover image for profiles. */
 const shrinkBanner=f=>canvasBlob(f,(g,im,c)=>{const r=Math.max(c.width/im.width,c.height/im.height),w=im.width*r,h=im.height*r;g.drawImage(im,(c.width-w)/2,(c.height-h)/2,w,h)},()=>1200,()=>400,.82);
+
+/* The student's location, if they chose to share it. Rounded to about 1 km and kept only in this browser. */
+let LOC=null;
+try{const v=JSON.parse(localStorage.getItem('board.loc'));if(v&&typeof v.lat==='number')LOC=v}catch(_){}
+function setLoc(v){LOC=v;try{v?localStorage.setItem('board.loc',JSON.stringify(v)):localStorage.removeItem('board.loc')}catch(_){}}
+const miles=km=>{const m=km*0.621;return m<0.2?'Right by you':m<10?m.toFixed(1)+' mi away':Math.round(m)+' mi away'};
+/* "Lenton · 0.4 mi away", "Online", or just the area when we don't know where the student is */
+const whereText=it=>!it.area?'':it.area==='Online'?'Online':it.distanceKm!=null?`${it.area} · ${miles(it.distanceKm)}`:it.area;
+const PIN_ICON='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0114 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>';

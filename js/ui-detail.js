@@ -100,7 +100,7 @@ function drawDetail(){
   const cc=CAT[it.cat]||CAT.Other,own=USER&&it.ownerId===USER.id,items=menuItems(it);
   $('dbody').innerHTML=`<div class="dcover" style="background:${cc.c}">${it.banner?`<img src="${esc(it.banner)}" alt="" decoding="async">`:`<span class="pat">${svg(ICONS[cc.i],64,1.4)}</span>`}</div>
     <div class="dprof tw">${avatar(it,104)}<div class="dinfo"><span class="svc">${esc(it.sub||it.cat)}</span>
-    <div class="stat-line">${n?`<span>${stars(avg,16)} <b>${avg.toFixed(1)}</b> from ${n} review${n>1?'s':''}</span>`:'<span>No reviews yet</span>'}${it.kind==='services'?replyLine(it.avgResponseSeconds):''}</div>
+    <div class="stat-line">${n?`<span>${stars(avg,16)} <b>${avg.toFixed(1)}</b> from ${n} review${n>1?'s':''}</span>`:'<span>No reviews yet</span>'}${it.kind==='services'?replyLine(it.avgResponseSeconds):''}${whereText(it)?`<span class="rtime">${PIN_ICON}${esc(whereText(it))}</span>`:''}</div>
     ${own?'<p class="hint" style="margin:10px 0 0">This is your listing.</p>':`<button class="btn pink sm" type="button" data-dm="${esc(it.id)}" style="margin-top:10px">Message ${esc(it.name)}</button>`}</div></div>
     <p style="margin:12px 0 0">${esc(it.desc)}</p>
     <div class="meta" style="margin-top:10px">${(it.meta||[]).map(m=>`<span>${esc(m)}</span>`).join('')}</div>

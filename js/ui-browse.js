@@ -39,7 +39,7 @@ $$('catpanel').addEventListener('click',e=>{
   const b=e.target.closest('[data-sub]');if(!b)return;B.sub=b.dataset.sub==='All'?null:b.dataset.sub;loadListings();
 });
 $$('filters').addEventListener('change',e=>{
-  if(e.target.id==='f-sort'){B.sort=e.target.value;loadListings()}
+  if(e.target.id==='f-sort'){B.sort=e.target.value;if(B.sort==='near'&&!LOC){askLocation(()=>loadListings(),()=>{B.sort='';drawChrome()});return}loadListings()}
   if(e.target.id==='f-rate'){B.minRating=+e.target.value||0;loadListings()}
 });
 $$('filters').addEventListener('click',e=>{
@@ -68,11 +68,12 @@ function cardHTML(it){
     ${head}
     <div class="card-body">
       ${kind==='services'?`<div class="who">${avatar(it,64)}<span class="svc">${esc(it.sub||it.cat)}</span></div><span class="cat">${esc(it.cat)}</span>`:`<span class="cat">${esc(it.cat)}</span>`}
-      <h3>${esc(it.name)}</h3>
+      <h3>${kind==='services'&&!it.preview?`<button class="cardlink" type="button" data-detail="${esc(it.id)}">${esc(it.name)}</button>`:esc(it.name)}</h3>
+      ${kind==='services'&&whereText(it)?`<p class="near">${PIN_ICON}${esc(whereText(it))}</p>`:''}
       ${kind==='services'?`<div class="rate">${n&&it.rating!=null?`${stars(it.rating)}<span>${it.rating.toFixed(1)} (${n})</span>`:'<span>No reviews yet</span>'}</div>`:''}
       <p>${esc(it.desc)}</p>
-      <div class="meta">${(it.from?[it.from]:[]).concat(it.meta||[]).map(m=>`<span>${esc(m)}</span>`).join('')}</div>
-      ${it.near?`<p class="near">${esc(it.near)}</p>`:''}${kind==='services'&&!it.preview?`<button class="btn dark sm" type="button" data-detail="${esc(it.id)}">Menu and reviews</button>`:''}
+      <div class="meta">${(it.from?[it.from]:[]).concat((it.meta||[]).filter(m=>m!==it.area)).map(m=>`<span>${esc(m)}</span>`).join('')}</div>
+      
       <div class="contact"><code>${esc(it.contact)}</code>${kind==='official'?'':`<button class="copy" type="button" data-copy="${esc(it.contact)}">Copy</button>`}</div>
     </div>
   </article>`;
@@ -101,7 +102,7 @@ function drawChrome(){
   if(svc){
     const any=B.sort||B.minRating;
     fl.hidden=false;
-    fl.innerHTML=`<label class="fsel"><span>Sort</span><select id="f-sort"><option value="">Recommended</option>${[['top','Top rated'],['price','Lowest price'],['reviews','Most reviews'],['reply','Fastest reply']].map(([v,t])=>`<option value="${v}" ${B.sort===v?'selected':''}>${t}</option>`).join('')}</select></label>
+    fl.innerHTML=`<label class="fsel"><span>Sort</span><select id="f-sort"><option value="">Recommended</option>${[['top','Top rated'],['near','Nearest'],['price','Lowest price'],['reviews','Most reviews'],['reply','Fastest reply']].map(([v,t])=>`<option value="${v}" ${B.sort===v?'selected':''}>${t}</option>`).join('')}</select></label>
       <label class="fsel"><span>Rating</span><select id="f-rate"><option value="">Any rating</option>${[5,4,3,2,1].map(n=>`<option value="${n}" ${B.minRating===n?'selected':''}>${n===5?'5 stars only':n+' stars and up'}</option>`).join('')}</select></label>
       ${any?'<button class="link" type="button" id="f-clear">Clear filters</button>':''}`;
   }else{fl.hidden=true;fl.innerHTML=''}
@@ -131,7 +132,7 @@ async function loadListings(append){
   B.status='loading';B.err='';drawChrome();drawGrid();
   try{
     const svc=B.tab==='services';
-    const r=await API.listings({kind:B.tab,category:B.cat,sub:B.sub,q:B.term,limit:B.PAGE,offset:append?B.items.length:0,sort:svc?B.sort:'',minRating:svc&&B.minRating?B.minRating:''});
+    const r=await API.listings({lat:LOC&&LOC.lat,lng:LOC&&LOC.lng,kind:B.tab,category:B.cat,sub:B.sub,q:B.term,limit:B.PAGE,offset:append?B.items.length:0,sort:svc?B.sort:'',minRating:svc&&B.minRating?B.minRating:''});
     if(seq!==B.seq)return;   /* a newer request replaced this one */
     B.items=append?B.items.concat(r.items):r.items;B.total=r.total;B.facets=r.facets||{};B.status='ok';drawChrome();
   }catch(e){

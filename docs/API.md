@@ -126,7 +126,7 @@ Every non-2xx response has this body:
 | `GET /auth/me` | Returns `{ user }` for the token, or 401. The front end calls this on page load. |
 
 ### Listings
-`GET /listings` query: `kind` (required), `category`, `sub`, `q` (search words), `sort` (`top`, `price`, `reviews`, `reply`; empty = your default order), `minRating` (1 to 5), `limit` (default 24, max 100), `offset`.
+`GET /listings` query: `kind` (required), `category`, `sub`, `q` (search words), `sort` (`top`, `near`, `price`, `reviews`, `reply`; empty = your default order), `lat`/`lng` (optional, the student's rough location; when sent, add `distanceKm` to each item so cards can show "0.4 mi away"), `minRating` (1 to 5), `limit` (default 24, max 100), `offset`.
 Returns `{ "items": [ListingSummary], "total": 19, "facets": { "subs": { "Barbers": 2, "Braids": 2 } } }`. `facets.subs` counts listings per type with every filter applied **except** `sub`, so the type buttons can show counts. Search should match name, category, sub, description, meta and menu item names. Only `status: "live"` rows.
 
 `GET /listings/:id` returns `{ "listing": Listing }`. 404 if missing.
