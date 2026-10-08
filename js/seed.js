@@ -16,11 +16,13 @@ var BOARD_SEED = {
     {"id":"svc_frame-by-femi","kind":"services","name":"Frame by Femi","cat":"Photography","sub":"Portraits","desc":"Portraits, LinkedIn headshots and creator content with natural light.","meta":["West Bridgford"],"contact":"@framebyfemi","menu":[{"group":null,"items":[{"name":"Headshot (20 min)","price":"£20"},{"name":"Portrait session (45 min)","price":"£40"}]}],"policy":"Rescheduling is free with 24 hours notice.","sections":[],"reviews":[{"rating":5,"text":"My LinkedIn photo got me compliments from recruiters.","author":"Ravi S.","ageDays":14},{"rating":5,"text":"Made me feel comfortable straight away.","author":"Isla N.","ageDays":30}],"area":"West Bridgford"},
     {"id":"svc_event-snaps","kind":"services","name":"Event Snaps","cat":"Photography","sub":"Events","desc":"Event coverage for balls, parties and socials. Edited gallery within 5 days.","meta":["Nottingham"],"contact":"eventsnaps@example.com","menu":[{"group":null,"items":[{"name":"Event, 2 hours","price":"£60"},{"name":"Event, 4 hours","price":"£110"}]}],"policy":"Bookings need 7 days notice. Deposit confirms the date.","sections":[],"reviews":[{"rating":4,"text":"Covered our ball well. Gallery came back on time.","author":"Hugo C.","ageDays":21}],"area":"Sneinton"}
   ],
-  socs: [],
-  official: [
-    {"id":"off_freshers-fair-round-two","kind":"official","name":"Freshers Fair round two","cat":"Students’ union","desc":"Missed the first one? More clubs and local businesses at the students’ union, with free stuff while it lasts.","meta":["City centre"],"contact":"Posted by the students’ union"},
-    {"id":"off_library-opening-hours-change","kind":"official","name":"Library opening hours change","cat":"University","desc":"The main library opens 24/7 during exams. Bring your student ID after 10pm.","meta":["Main library"],"contact":"Posted by the university library"},
-    {"id":"off_student-rep-elections-open","kind":"official","name":"Student rep elections open","cat":"Students’ union","desc":"Run to represent your course. Nominations are short and voting happens online.","meta":["Online"],"contact":"Posted by the students’ union"}
+  socs: [
+    {"id":"soc_afro-caribbean-society","kind":"socs","name":"Afro-Caribbean Society","cat":"Culture","desc":"Socials, a big annual cultural show and a family vibe for anyone who wants in.","meta":["Thursdays, 7pm","City centre"],"contact":"@acs.notts"},
+    {"id":"soc_tech-code-society","kind":"socs","name":"Tech & Code Society","cat":"Tech","desc":"Hack nights, CV clinics with alumni and a chill Discord for help with coursework.","meta":["Wednesdays, 6pm","City centre"],"contact":"discord.gg/techsoc-notts"},
+    {"id":"soc_student-netball-club","kind":"socs","name":"Student Netball Club","cat":"Sport","desc":"Competitive squads and a no-trial social team. Kit not needed for tasters.","meta":["Mondays, 8pm","Local sports centre"],"contact":"@studentnetball"},
+    {"id":"soc_film-society","kind":"socs","name":"Film Society","cat":"Arts","desc":"Weekly screenings with snacks, plus one short-film project every term.","meta":["Tuesdays, 7:30pm","City centre"],"contact":"@filmsoc.notts"},
+    {"id":"soc_islamic-society","kind":"socs","name":"Islamic Society","cat":"Faith","desc":"Jummah reminders, iftars in Ramadan and weekly socials open to everyone.","meta":["Fridays","City centre"],"contact":"@isoc.notts"}
   ],
+  official: [],
 };
 if (typeof module !== "undefined") module.exports = BOARD_SEED;

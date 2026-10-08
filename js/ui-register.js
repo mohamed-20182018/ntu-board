@@ -1,11 +1,11 @@
-/* Register a business or an official notice. Pictures upload as soon as they are picked (API.upload);
+/* Register a business or a society. Pictures upload as soon as they are picked (API.upload);
    "Post" then sends their ids with the form (API.createListing). Needs a signed-in user. */
 const ov=$('overlay'),sheet=$('sheet'),stepEl=$('step'),bars=[...document.querySelectorAll('.progress i')];
 const MAXPH=4;
 let st={},opener=null;
 const KINDS=[
   {k:'services',t:'A student business',s:'Hair, nails, food, photography and more',i:ICONS.pound,bg:'var(--butter)'},
-  {k:'official',t:'An official notice',s:'For university and students’ union staff only',i:ICONS.bell,bg:'var(--sky)'}
+  {k:'socs',t:'A society',s:'Sport, culture, faith, tech, arts and more',i:ICONS.users,bg:'var(--mint)'}
 ];
 
 function openSheet(e){

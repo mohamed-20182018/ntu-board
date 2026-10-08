@@ -22,7 +22,7 @@ const CAT={
 const TILES=['Hair','Nails','Food','Photography'];
 const LANES=[
   {k:'services',t:'Student services',d:'Hair, nails, food, photography and more.',c:'var(--butter)'},
-  {k:'official',t:'Official notices',d:'From universities and students’ unions.',c:'var(--sky)'}
+  {k:'socs',t:'Societies',d:'What’s on, when it meets, how to join.',c:'var(--mint)'}
 ];
 /* Keep these two lists in step with the backend's allowed categories (docs/API.md, POST /listings). */
 const SUBS={Hair:['Barbers','Braids'],Nails:['Gel & BIAB','Acrylics','Nail art'],Food:['Cakes & bakes','Meal prep','Hot meals','Snacks'],Photography:['Grad shoots','Portraits','Events']};
