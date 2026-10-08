@@ -592,3 +592,14 @@ textarea{resize:vertical;min-height:84px}
 .filters #f-loc{display:inline-flex;align-items:center;gap:6px}
 .filters #f-loc svg{color:var(--pink)}
 .filters #f-loc[aria-pressed="true"] svg{color:var(--bg)}
+
+/* ===== Sponsored spotlight (sliding) ===== */
+.pc-top{display:flex;align-items:baseline;gap:12px;margin:0 4px 10px}
+.pc-label{font-size:clamp(20px,2.4vw,26px);font-weight:900;letter-spacing:-.03em;margin:0}
+.pc-top .why{margin-left:auto}
+.pc-view{overflow:hidden}
+.pc-track{display:flex;will-change:transform}
+.pc-track .pc-slide{flex:0 0 100%;min-width:0}
+.pc-pause{margin-left:auto;border:2px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:6px 14px;font:inherit;font-weight:700;font-size:13px;cursor:pointer}
+.pc-pause:focus-visible{outline:3px solid var(--pink);outline-offset:2px}
+.pc .pinfo h3{margin:0}

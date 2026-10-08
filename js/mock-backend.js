@@ -213,9 +213,12 @@
       const lat = parseFloat(q.lat), lng = parseFloat(q.lng), here = !isNaN(lat) && !isNaN(lng) ? [lat, lng] : null;
       const limit = Math.max(1, Math.min(10, parseInt(q.limit, 10) || 5));
       const dist = l => here && AREAS[l.area] ? km(here, AREAS[l.area]) : null;
-      const items = this.s.listings.filter(l => l.kind === 'services' && l.status === 'live' && l.promoted && (!q.category || l.cat === q.category) && (!q.sub || l.sub === q.sub))
-        .map(l => ({ l, d: dist(l), r: this._stats(l).avg || 0 }))
-        .sort((a, b) => here ? ((a.d == null ? 1e9 : a.d) - (b.d == null ? 1e9 : b.d)) : (b.r - a.r))
+      const match = l => (!q.category || l.cat === q.category) && (!q.sub || l.sub === q.sub);
+      const order = (a, b) => (b.m - a.m) || (here ? ((a.d == null ? 1e9 : a.d) - (b.d == null ? 1e9 : b.d)) : (b.r - a.r));
+      /* fill=true tops up with other sponsored businesses when too few match, so the spotlight always has a few to rotate */
+      const items = this.s.listings.filter(l => l.kind === 'services' && l.status === 'live' && l.promoted && (q.fill === 'true' || match(l)))
+        .map(l => ({ l, m: match(l) ? 1 : 0, d: dist(l), r: this._stats(l).avg || 0 }))
+        .sort(order)
         .slice(0, limit).map(x => Object.assign(this._summary(x.l), { distanceKm: x.d == null ? null : Math.round(x.d * 10) / 10 }));
       return { items };
     }

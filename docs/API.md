@@ -115,6 +115,8 @@ Every non-2xx response has this body:
 
 `GET /recommended?lat=&lng=&area=&limit=6` returns `{ "basis": "location"|"area"|"rating", "items": [ListingSummary + distanceKm] }`. The home page sends `lat`/`lng` (rounded to about 1 km) if the student shares their location, or an `area` they picked, or nothing. Rank by rating adjusted for review count (so one 5-star review doesn't beat thirty 4.8s), number of reviews, and distance. `distanceKm` is null for Online businesses or when there is no location.
 
+`GET /promoted?category=&sub=&lat=&lng=&limit=6&fill=true` returns `{ "items": [ListingSummary + distanceKm] }`, the paid "Sponsored" businesses for the home page spotlight. Ones matching the student's category/type come first (nearest first when `lat`/`lng` are sent). With `fill=true`, top up with other sponsored businesses when too few match, so the spotlight always has a few to slide through. Each ListingSummary also has `promoted: true|false`.
+
 `GET /top` returns `{ "items": [ { "id": "...", "name": "..." } ] }`. The "Top businesses this week" strip, up to 8, best first. Rank however you like (reviews in the last 7 days, views, ratings).
 
 ### Auth

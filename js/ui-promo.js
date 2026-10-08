@@ -1,12 +1,10 @@
-/* Paid placements ("Sponsored") on the home page, plus the shared "use my location" helper.
-   Three ways to show them, picked with ?promo=a|b|c in the address (default a):
-     a  Featured row: a strip of big cards between the filters and the results
-     b  In the results: wide sponsored cards mixed into the grid (1st and 7th place)
-     c  Spotlight: one large rotating banner right under the search bar
-   Data comes from API.promoted, which matches the category/type the student picked and sorts by distance. */
-const PROMO=(()=>{const v=(new URLSearchParams(location.search).get('promo')||'a').toLowerCase();return ['a','b','c'].includes(v)?v:'a'})();
-const P={items:[],seq:0,slide:0,timer:null,paused:false};
+/* Sponsored spotlight on the home page, plus the shared "use my location" helper.
+   Businesses pay to appear here. It slides through them on its own (pauses on hover, focus,
+   or the pause button) and matches the category the student picked, topping up with other
+   sponsored businesses so there is always something to scroll through. Data: API.promoted. */
+const P={items:[],seq:0,slide:0,timer:null,hover:false,stopped:false};
 const REDUCED=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+const SLIDE_MS=5000;
 
 /* ---------- location (shared by the filter button and the "Nearest" sort) ---------- */
 function askLocation(ok,fail,btn){
@@ -18,100 +16,86 @@ function askLocation(ok,fail,btn){
   },()=>{done();say('Couldn’t get your location. Check your browser’s location setting.');if(fail)fail()},{maximumAge:600000,timeout:10000});
 }
 
-/* ---------- shared bits ---------- */
-const sponsoredTag='<span class="spons" title="Businesses pay to appear here">Sponsored</span>';
-function promoVisual(it,big){
-  const c=CAT[it.cat]||CAT.Other,img=it.banner||(it.photos||[])[0];
-  return `<div class="pv" style="background:${c.c}">${img?`<img src="${esc(img)}" alt="" decoding="async" loading="lazy">`:`<span class="pv-ic">${svg(ICONS[c.i],big?72:52,1.4)}</span>`}${avatar(it,big?88:64)}</div>`;
-}
-function promoInfo(it){
-  const n=it.reviewCount||0;
-  return `<span class="svc">${esc(it.sub||it.cat)}</span>
-    <h3><button class="cardlink" type="button" data-detail="${esc(it.id)}">${esc(it.name)}</button></h3>
-    ${whereText(it)?`<p class="near">${PIN_ICON}${esc(whereText(it))}</p>`:''}
-    <div class="rate">${n&&it.rating!=null?`${stars(it.rating)}<span>${it.rating.toFixed(1)} (${n})</span>`:'<span>No reviews yet</span>'}</div>
-    <p class="pdesc">${esc(it.desc)}</p>
-    <div class="meta">${it.from?`<span>${esc(it.from)}</span>`:''}</div>`;
-}
-const whyLink='<a class="why" href="how-it-works.html#featured">What’s this?</a>';
-
-/* ---------- option a: featured row ---------- */
-function drawPromoA(){
-  const el=$('promo-a');
-  if(!P.items.length){el.hidden=true;el.innerHTML='';return}
-  el.hidden=false;
-  el.innerHTML=`<div class="pa-head"><h2>Featured${B.cat?' in '+esc(B.sub||B.cat):''}</h2>${sponsoredTag}${whyLink}</div>
-    <div class="pa-row" role="list">${P.items.map(it=>`<article class="pcard" role="listitem">${promoVisual(it)}<div class="pinfo">${promoInfo(it)}</div></article>`).join('')}</div>`;
+/* ---------- one slide ---------- */
+function slideHTML(it,i,n){
+  const c=CAT[it.cat]||CAT.Other,img=it.banner||(it.photos||[])[0],r=it.reviewCount||0;
+  return `<div class="pc-slide" role="group" aria-roledescription="slide" aria-label="${i+1} of ${n}: ${esc(it.name)}" ${i===P.slide?'':'aria-hidden="true" inert'}>
+    <div class="pv" style="background:${c.c}">${img?`<img src="${esc(img)}" alt="" decoding="async" loading="lazy">`:`<span class="pv-ic">${svg(ICONS[c.i],72,1.4)}</span>`}${avatar(it,88)}</div>
+    <div class="pinfo">
+      <span class="svc">${esc(it.sub||it.cat)}</span>
+      <h3>${esc(it.name)}</h3>
+      ${whereText(it)?`<p class="near">${PIN_ICON}${esc(whereText(it))}</p>`:''}
+      <div class="rate">${r&&it.rating!=null?`${stars(it.rating)}<span>${it.rating.toFixed(1)} (${r})</span>`:'<span>No reviews yet</span>'}</div>
+      <p class="pdesc">${esc(it.desc)}</p>
+      ${it.from?`<div class="meta"><span>${esc(it.from)}</span></div>`:''}
+      <div class="pc-ctas"><button class="btn pink" type="button" data-detail="${esc(it.id)}">View profile</button><button class="btn ghost" type="button" data-dm="${esc(it.id)}">Message</button></div>
+    </div>
+  </div>`;
 }
 
-/* ---------- option b: wide sponsored cards inside the results ---------- */
-function promoWideHTML(it){return `<article class="card pwide">${promoVisual(it,true)}<div class="pinfo">${sponsoredTag}${promoInfo(it)}</div></article>`}
-/* Called by drawGrid in ui-browse.js with the normal card HTML strings. */
-function promoInGrid(cards){
-  if(PROMO!=='b'||B.tab!=='services'||!P.items.length)return cards;
-  const out=cards.slice();
-  out.splice(0,0,promoWideHTML(P.items[0]));
-  if(P.items[1]&&out.length>7)out.splice(7,0,promoWideHTML(P.items[1]));
-  return out;
-}
-
-/* ---------- option c: spotlight carousel ---------- */
-function drawPromoC(){
+/* ---------- the carousel ---------- */
+function drawPromo(){
   const el=$('promo-c');
-  clearInterval(P.timer);
+  stopTimer();
   if(!P.items.length){el.hidden=true;el.innerHTML='';return}
   if(P.slide>=P.items.length)P.slide=0;
-  const it=P.items[P.slide],many=P.items.length>1;
+  const n=P.items.length,many=n>1;
   el.hidden=false;
-  el.innerHTML=`<section class="pc" aria-roledescription="carousel" aria-label="Sponsored businesses">
-    <div class="pc-slide" aria-roledescription="slide" aria-label="${P.slide+1} of ${P.items.length}">
-      ${promoVisual(it,true)}
-      <div class="pinfo">${sponsoredTag}${promoInfo(it)}
-        <div class="pc-ctas"><button class="btn pink" type="button" data-detail="${esc(it.id)}">View profile</button><button class="btn ghost" type="button" data-dm="${esc(it.id)}">Message</button></div>
-      </div>
-    </div>
-    ${many?`<div class="pc-nav"><button class="x" type="button" id="pc-prev" aria-label="Previous sponsored business">&#8249;</button><div class="pc-dots">${P.items.map((_,i)=>`<button type="button" data-slide="${i}" aria-label="Show ${i+1}" aria-current="${i===P.slide}"></button>`).join('')}</div><button class="x" type="button" id="pc-next" aria-label="Next sponsored business">&#8250;</button>${whyLink}</div>`:`<div class="pc-nav">${whyLink}</div>`}
+  el.innerHTML=`<div class="pc-top"><h2 class="pc-label">Sponsored</h2><a class="why" href="how-it-works.html#featured">What’s this?</a></div>
+  <section class="pc" aria-roledescription="carousel" aria-label="Sponsored businesses">
+    <div class="pc-view"><div class="pc-track" id="pc-track" aria-live="${P.stopped?'polite':'off'}">${P.items.map((it,i)=>slideHTML(it,i,n)).join('')}</div></div>
+    ${many?`<div class="pc-nav">
+      <button class="x" type="button" id="pc-prev" aria-label="Previous">&#8249;</button>
+      <div class="pc-dots">${P.items.map((it,i)=>`<button type="button" data-slide="${i}" aria-label="Show ${esc(it.name)}" aria-current="${i===P.slide}"></button>`).join('')}</div>
+      <button class="x" type="button" id="pc-next" aria-label="Next">&#8250;</button>
+      <button class="pc-pause" type="button" id="pc-pause" aria-pressed="${P.stopped}">${P.stopped?'Play':'Pause'}</button>
+    </div>`:''}
   </section>`;
-  if(many&&!REDUCED)P.timer=setInterval(()=>{if(!P.paused){P.slide=(P.slide+1)%P.items.length;drawPromoC()}},6000);
+  moveTo(P.slide,false);
+  startTimer();
 }
+function moveTo(i,animate){
+  const n=P.items.length;if(!n)return;
+  P.slide=(i+n)%n;
+  const t=$('pc-track');if(!t)return;
+  t.style.transition=animate&&!REDUCED?'transform .6s cubic-bezier(.2,.7,.2,1)':'none';
+  t.style.transform=`translateX(-${P.slide*100}%)`;
+  t.querySelectorAll('.pc-slide').forEach((s,k)=>{if(k===P.slide){s.removeAttribute('aria-hidden');s.inert=false}else{s.setAttribute('aria-hidden','true');s.inert=true}});
+  $('promo-c').querySelectorAll('[data-slide]').forEach((d,k)=>d.setAttribute('aria-current',k===P.slide));
+}
+function startTimer(){stopTimer();if(P.items.length>1&&!P.stopped)P.timer=setInterval(()=>{if(!P.hover&&!document.hidden)moveTo(P.slide+1,true)},SLIDE_MS)}
+function stopTimer(){clearInterval(P.timer);P.timer=null}
 
 /* ---------- loading ---------- */
 async function loadPromo(){
   if(!onHome)return;
   const seq=++P.seq;
-  if(B.tab!=='services'){P.items=[];render();return}
+  if(B.tab!=='services'){P.items=[];drawPromo();return}
   try{
-    const r=await API.promoted({category:B.cat,sub:B.sub,lat:LOC&&LOC.lat,lng:LOC&&LOC.lng,limit:5});
+    const r=await API.promoted({category:B.cat,sub:B.sub,lat:LOC&&LOC.lat,lng:LOC&&LOC.lng,limit:6,fill:true});
     if(seq!==P.seq)return;
     P.items=r.items;P.slide=0;
   }catch(_){if(seq!==P.seq)return;P.items=[]}
-  render();
-  function render(){
-    if(PROMO==='a')drawPromoA();
-    if(PROMO==='c')drawPromoC();
-    if(PROMO==='b')drawGrid();
-  }
+  drawPromo();
 }
 
-/* ---------- clicks ---------- */
-function promoClick(e){
-  const dm=e.target.closest('[data-dm]');if(dm){startDM(dm.dataset.dm,dm);return}
-  const d=e.target.closest('[data-detail]');if(d){openDetail(d.dataset.detail,d);return}
-  if(e.target.closest('#pc-prev')){P.slide=(P.slide+P.items.length-1)%P.items.length;drawPromoC();$('pc-prev').focus();return}
-  if(e.target.closest('#pc-next')){P.slide=(P.slide+1)%P.items.length;drawPromoC();$('pc-next').focus();return}
-  const s=e.target.closest('[data-slide]');if(s){P.slide=+s.dataset.slide;drawPromoC();const n=$('promo-c').querySelector(`[data-slide="${P.slide}"]`);if(n)n.focus()}
-}
+/* ---------- interaction ---------- */
 if(onHome){
-  $('promo-a').addEventListener('click',promoClick);
-  const pc=$('promo-c');
-  pc.addEventListener('click',promoClick);
-  /* pause the spotlight while someone is looking at it or using it */
-  pc.addEventListener('mouseenter',()=>P.paused=true);pc.addEventListener('mouseleave',()=>P.paused=false);
-  pc.addEventListener('focusin',()=>P.paused=true);pc.addEventListener('focusout',()=>P.paused=false);
-
-  /* demo switcher so the three options can be compared */
-  const sw=document.createElement('nav');
-  sw.className='promo-switch';sw.setAttribute('aria-label','Sponsored placement demo');
-  sw.innerHTML=`<span>Sponsored spot demo</span>${[['a','A · Featured row'],['b','B · In the results'],['c','C · Spotlight']].map(([k,t])=>`<a href="?promo=${k}#browse" ${k===PROMO?'aria-current="page"':''}>${t}</a>`).join('')}`;
-  document.body.appendChild(sw);
+  const el=$('promo-c');
+  el.addEventListener('click',e=>{
+    const dm=e.target.closest('[data-dm]');if(dm){startDM(dm.dataset.dm,dm);return}
+    const d=e.target.closest('[data-detail]');if(d){openDetail(d.dataset.detail,d);return}
+    if(e.target.closest('#pc-prev')){moveTo(P.slide-1,true);startTimer();return}
+    if(e.target.closest('#pc-next')){moveTo(P.slide+1,true);startTimer();return}
+    const pz=e.target.closest('#pc-pause');
+    if(pz){P.stopped=!P.stopped;pz.setAttribute('aria-pressed',P.stopped);pz.textContent=P.stopped?'Play':'Pause';$('pc-track').setAttribute('aria-live',P.stopped?'polite':'off');P.stopped?stopTimer():startTimer();return}
+    const s=e.target.closest('[data-slide]');if(s){moveTo(+s.dataset.slide,true);startTimer()}
+  });
+  /* pause while someone is looking at it or using it */
+  el.addEventListener('mouseenter',()=>P.hover=true);el.addEventListener('mouseleave',()=>P.hover=false);
+  el.addEventListener('focusin',()=>P.hover=true);el.addEventListener('focusout',()=>P.hover=false);
+  /* swipe on phones */
+  let sx=null;
+  el.addEventListener('touchstart',e=>{if(e.target.closest('.pc-view'))sx=e.touches[0].clientX},{passive:true});
+  el.addEventListener('touchend',e=>{if(sx==null)return;const d=e.changedTouches[0].clientX-sx;sx=null;if(Math.abs(d)>50){moveTo(P.slide+(d<0?1:-1),true);startTimer()}});
 }
