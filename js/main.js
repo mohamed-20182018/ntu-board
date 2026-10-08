@@ -2,6 +2,8 @@
 (async function boot(){
   if(!API.isMock){const n=$('demo-note');if(n)n.hidden=true}
   renderAuth();
+  /* the arrow on the home page glides down to Browse; normal scrolling still works as usual */
+  document.querySelectorAll('.hero a[href="#browse"]').forEach(cue=>cue.addEventListener('click',e=>{e.preventDefault();const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;$('browse').scrollIntoView({behavior:reduce?'auto':'smooth',block:'start'});history.replaceState(null,'','#browse');setTimeout(()=>{$('q').focus({preventScroll:true})},reduce?0:700)}));
   if(onHome){
     /* links like index.html?cat=Hair#browse or ?tab=socs open the board pre-filtered */
     const p=new URLSearchParams(location.search);
