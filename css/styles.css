@@ -651,3 +651,18 @@ textarea{resize:vertical;min-height:84px}
 #browse{scroll-margin-top:96px}
 @media (max-height:640px){.scroll-cue span{display:none}}
 @media (prefers-reduced-motion:reduce){.scroll-cue svg{animation:none}}
+
+/* Top businesses strip sits between the hero and Browse */
+.hero-full + .marquee{margin-top:0}
+.marquee + .browse{padding-top:48px}
+.scroll-cue{bottom:28px}
+
+/* Phones and small tablets: no empty gap under the heading. The stickers sit in a row under
+   the text, then the arrow, then the top businesses strip straight after. */
+@media (max-width:900px){
+  .hero-full{min-height:auto;padding-block:32px 28px}
+  .stickers{display:flex;position:static;flex-direction:row;flex-wrap:wrap;align-items:center;gap:12px;margin-top:26px}
+  .sticker.b{margin-right:0}
+  .scroll-cue{position:static;transform:none;align-self:center;margin-top:28px}
+  .marquee + .browse{padding-top:36px}
+}

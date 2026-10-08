@@ -25,8 +25,10 @@
       <div class="sticker b">Grad shoots · from £25</div>
       <div class="sticker c">bento cakes £15</div>
     </div>
-    <a class="scroll-cue" href="#browse" id="scroll-cue"><span>Browse the Board</span><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg></a>
+    <a class="scroll-cue" href="#browse" id="scroll-cue" aria-label="Scroll down to Browse the Board"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg></a>
   </section>
+
+  <div class="marquee" role="region" aria-label="Top businesses this week"><span class="mq-label">Top businesses this week</span><div class="mq-scroll" aria-hidden="true"><div class="track" id="track"></div></div></div>
 
   <section class="wrap browse" id="browse" aria-labelledby="browse-h">
     <div class="browse-head">
@@ -52,8 +54,6 @@
     <p class="sr" id="status" aria-live="polite"></p>
     <div class="grid" id="grid" role="tabpanel"></div>
   </section>
-
-  <div class="marquee" role="region" aria-label="Top businesses this week"><span class="mq-label">Top businesses this week</span><div class="mq-scroll" aria-hidden="true"><div class="track" id="track"></div></div></div>
 
   <section class="wrap" aria-labelledby="join-h">
     <div class="banner">
