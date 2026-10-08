@@ -6,7 +6,7 @@ let st={},opener=null;
 const KINDS=[
   {k:'services',t:'A student business',s:'Hair, nails, tutoring, repairs, food and more',i:ICONS.pound,bg:'var(--butter)'},
   {k:'socs',t:'A society',s:'Sport, culture, faith, tech, arts and more',i:ICONS.users,bg:'var(--mint)'},
-  {k:'official',t:'An official notice',s:'For NTU and NTSU staff only',i:ICONS.bell,bg:'var(--sky)'}
+  {k:'official',t:'An official notice',s:'For university and students’ union staff only',i:ICONS.bell,bg:'var(--sky)'}
 ];
 
 function openSheet(e){
@@ -87,7 +87,7 @@ function draw(){
     const soc=st.kind==='socs',off=st.kind==='official',svc=st.kind==='services';
     title.textContent=soc?'Tell us about your society':off?'Your notice':'Tell us about your business';
     stepEl.innerHTML=`<form id="f" novalidate>
-      <div class="f"><label for="r-name">${soc?'Society name':off?'Notice title':'Business name'}</label><input type="text" id="r-name" maxlength="80" value="${esc(st.name)}" placeholder="${soc?'e.g. NTU Chess Society':off?'e.g. Reading week library hours':'e.g. Lashes by Zara'}"></div>
+      <div class="f"><label for="r-name">${soc?'Society name':off?'Notice title':'Business name'}</label><input type="text" id="r-name" maxlength="80" value="${esc(st.name)}" placeholder="${soc?'e.g. Chess Society':off?'e.g. Reading week library hours':'e.g. Lashes by Zara'}"></div>
       <div class="f"><label for="r-cat">Category</label><select id="r-cat"><option value="">Choose one</option>${CATS[st.kind].map(c=>`<option ${st.cat===c?'selected':''}>${c}</option>`).join('')}</select></div>
       ${svc?`<div class="f"><span class="lbl" id="bn-l">Cover picture <span class="hint">optional, the wide image at the top of your profile</span></span>
         <div class="bnpick" style="background:${(CAT[st.cat]||CAT.Other).c}">${st.banner?`<img src="${esc(st.banner.url)}" alt="Your cover picture">`:''}</div>
@@ -96,9 +96,9 @@ function draw(){
       <div class="f"><span class="lbl" id="av-l">Profile picture <span class="hint">optional, a logo or a face. You can add one later.</span></span>
         <div class="avpick">${avatar({name:st.name||'You',cat:st.cat||'Other',avatar:st.avatar&&st.avatar.url},64)}<label class="addph"><input type="file" id="r-avatar" accept="image/jpeg,image/png,image/webp" aria-describedby="av-l"><span>${st.avatar?'Change picture':'+ Add picture'}</span></label>${st.avatar?'<button class="link" type="button" id="av-rm">Remove</button>':''}</div></div>`:''}
       <div class="f"><label for="r-desc">${soc?'What you get up to':off?'Details':'What you offer'} <span class="hint">(one or two lines)</span></label><textarea id="r-desc" maxlength="200">${esc(st.desc)}</textarea></div>
-      <div class="f"><label for="r-meta">${soc?'When and where you meet':off?'Where it applies':'Where and when'} <span class="hint">separate with commas</span></label><input type="text" id="r-meta" value="${esc(st.meta)}" placeholder="${soc?'Wed 6pm, Clifton':off?'All campuses':'City campus, evenings'}"></div>
+      <div class="f"><label for="r-meta">${soc?'When and where you meet':off?'Where it applies':'Where and when'} <span class="hint">separate with commas</span></label><input type="text" id="r-meta" value="${esc(st.meta)}" placeholder="${soc?'Wed 6pm, city centre':off?'Online':'City centre, evenings'}"></div>
       ${svc?`<div class="f"><label for="r-menu">Price list <span class="hint">one per line, like Fade - £25</span></label><textarea id="r-menu" placeholder="Fade - £25&#10;Lineup - £15">${esc(st.menu)}</textarea></div><div class="f"><label for="r-policy">Policy <span class="hint">optional, e.g. late or cancellation rules</span></label><input type="text" id="r-policy" maxlength="400" value="${esc(st.policy)}" placeholder="Over 10 minutes late and a late fee applies"></div>`:''}
-      <div class="f"><label for="r-contact">${off?'Posted by':'How people reach you'} <span class="hint">${off?'your department':'Instagram, email or phone'}</span></label><input type="text" id="r-contact" maxlength="120" value="${esc(st.contact)}" placeholder="${off?'NTSU Advice Centre':'@yourhandle'}"></div>
+      <div class="f"><label for="r-contact">${off?'Posted by':'How people reach you'} <span class="hint">${off?'your department':'Instagram, email or phone'}</span></label><input type="text" id="r-contact" maxlength="120" value="${esc(st.contact)}" placeholder="${off?'Students’ union advice team':'@yourhandle'}"></div>
       <div class="f"><span class="lbl" id="ph-l">Photos <span class="hint">optional, up to 4. Show your work.</span></span>
         <label class="addph" ${st.photos.length>=MAXPH?'hidden':''}><input type="file" id="r-photos" accept="image/jpeg,image/png,image/webp,image/gif" multiple aria-describedby="ph-l"><span>+ Add photos</span></label>
         <p class="hint ${st.up?'upnote':''}" id="ph-m" role="status">${esc(st.pmsg)}</p>
@@ -151,7 +151,7 @@ function draw(){
     title.textContent=pending?'Sent for review':'You’re on the Board';
     stepEl.innerHTML=`<div class="done"><div class="big-pin" aria-hidden="true"></div>
       <p style="margin:0 0 6px;font-weight:700;font-size:18px">${esc(r.name||st.name)} ${pending?'is waiting for approval.':'is pinned.'}</p>
-      <p style="margin:0;color:var(--muted)">${pending?'Once it has been approved it will show for every NTU student.':'Students can find it now.'}${API.isMock?' Demo: it is saved in this browser only.':''}</p>
+      <p style="margin:0;color:var(--muted)">${pending?'Once it has been approved it will show for every student.':'Students can find it now.'}${API.isMock?' Demo: it is saved in this browser only.':''}</p>
       <div class="row-btns" style="justify-content:center"><button class="btn" type="button" id="see">${pending?'Done':'See my listing'}</button></div></div>`;
     $('see').addEventListener('click',()=>{closeSheet();if(pending)return;if($('browse'))$('browse').scrollIntoView({behavior:'smooth'});else location.href='index.html#browse'});
   }

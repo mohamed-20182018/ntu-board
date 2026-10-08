@@ -7,7 +7,7 @@ class ApiError extends Error {
 const API = (() => {
   const cfg = Object.assign({ mode: 'mock', apiBase: '/api/v1', useCookies: false, pollMs: null, mockLatency: [120, 320], mockPersist: true, demoLogins: false }, window.BOARD_CONFIG || {});
   const isMock = cfg.mode === 'mock';
-  const TOKEN_KEY = 'board.token', MOCK_KEY = 'board.mock.v2';
+  const TOKEN_KEY = 'board.token', MOCK_KEY = 'board.mock.v3';
   const store = {
     get(k) { try { return localStorage.getItem(k); } catch (_) { return null; } },
     set(k, v) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (_) {} }

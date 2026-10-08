@@ -60,7 +60,7 @@ Every non-2xx response has this body:
 {
   "id": "svc_fade-theory", "kind": "services", "name": "Fade Theory",
   "cat": "Hair", "sub": "Barbers", "desc": "Clean fades...",
-  "meta": ["Clifton campus", "Evenings and weekends"],
+  "meta": ["Lenton", "Evenings and weekends"],
   "contact": "@fade.theory",
   "avatar": "https://.../a.jpg", "banner": "https://.../cover.jpg",
   "photos": ["https://.../1.jpg"],
@@ -122,14 +122,14 @@ Every non-2xx response has this body:
 | `GET /auth/me` | Returns `{ user }` for the token, or 401. The front end calls this on page load. |
 
 ### Listings
-`GET /listings` query: `kind` (required), `category`, `sub`, `q` (search words), `sort` (`top`, `price`, `reviews`, `reply`; empty = your default order), `minRating` (e.g. 4), `campus` (e.g. `Clifton`, matched against `meta`), `limit` (default 24, max 100), `offset`.
+`GET /listings` query: `kind` (required), `category`, `sub`, `q` (search words), `sort` (`top`, `price`, `reviews`, `reply`; empty = your default order), `minRating` (e.g. 4), `limit` (default 24, max 100), `offset`.
 Returns `{ "items": [ListingSummary], "total": 19, "facets": { "subs": { "Barbers": 2, "Braids": 2 } } }`. `facets.subs` counts listings per type with every filter applied **except** `sub`, so the type buttons can show counts. Search should match name, category, sub, description, meta and menu item names. Only `status: "live"` rows.
 
 `GET /listings/:id` returns `{ "listing": Listing }`. 404 if missing.
 
 `POST /listings` (auth, **business accounts only**, else 403). body:
 ```json
-{ "kind": "services", "name": "...", "cat": "Hair", "sub": "Barbers", "desc": "...", "meta": ["City campus"],
+{ "kind": "services", "name": "...", "cat": "Hair", "sub": "Barbers", "desc": "...", "meta": ["City centre"],
   "contact": "@x", "menu": [ { "group": null, "items": [ { "name": "Fade", "price": "£25" } ] } ],
   "policy": "...", "avatarId": "up_1", "bannerId": "up_4", "photoIds": ["up_2", "up_3"] }
 ```

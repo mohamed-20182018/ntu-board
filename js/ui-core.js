@@ -23,11 +23,11 @@ const TILES=['Hair','Nails','Food','Tutoring','Repairs','Photography'];
 const LANES=[
   {k:'services',t:'Student services',d:'Hair, nails, tutoring, repairs and more.',c:'var(--butter)'},
   {k:'socs',t:'Societies',d:'What’s on, when it meets, how to join.',c:'var(--mint)'},
-  {k:'official',t:'Official adverts',d:'Notices from NTU and NTSU.',c:'var(--sky)'}
+  {k:'official',t:'Official notices',d:'From universities and students’ unions.',c:'var(--sky)'}
 ];
 /* Keep these two lists in step with the backend's allowed categories (docs/API.md, POST /listings). */
 const SUBS={Hair:['Barbers','Braids'],Nails:['Gel & BIAB','Acrylics','Nail art'],Food:['Cakes & bakes','Meal prep','Hot meals','Snacks'],Tutoring:['Coding','Maths & stats','Academic writing','Languages'],Photography:['Grad shoots','Portraits','Events'],Repairs:['Phones']};
-const CATS={services:['Hair','Nails','Lashes','Tutoring','Repairs','Photography','Food','Other'],socs:['Culture','Sport','Tech','Arts','Faith','Academic','Other'],official:['NTU','NTSU']};
+const CATS={services:['Hair','Nails','Lashes','Tutoring','Repairs','Photography','Food','Other'],socs:['Culture','Sport','Tech','Arts','Faith','Academic','Other'],official:['University','Students’ union']};
 
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));

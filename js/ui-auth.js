@@ -22,7 +22,7 @@ function drawAuth(msg,keep){
       <div class="f"><label for="a-email">Email</label><input type="text" inputmode="email" id="a-email" autocomplete="email" placeholder="you@example.com" value="${esc(keep.email)}"></div>
       <div class="f"><label for="a-pw">Password ${up?'<span class="hint">at least 8 characters</span>':''}</label><input type="password" id="a-pw" autocomplete="${up?'new-password':'current-password'}"></div>
       ${up?`<div class="f"><label for="a-type">I'm joining as</label><select id="a-type"><option value="student">A student looking for services</option><option value="business" ${keep.type==='business'?'selected':''}>A student running a business or society</option></select></div>
-      <label class="check" for="a-agree"><input type="checkbox" id="a-agree" ${keep.agree?'checked':''}>I understand the Board is a listings platform only and is not an official NTU or NTSU service.</label>`:''}
+      <label class="check" for="a-agree"><input type="checkbox" id="a-agree" ${keep.agree?'checked':''}>I understand the Board is a listings platform only and is not an official university or students’ union service.</label>`:''}
       <p class="err" id="a-err" role="alert" ${msg?'':'hidden'}>${esc(msg||'')}</p>
       ${API.cfg.demoLogins&&!up?'<p class="hint" style="margin:0 0 10px">Demo: see the business side with <button class="link" type="button" id="a-demo">the demo business account</button> (owner@demo.test / demo1234).</p>':''}
       <div class="row-btns"><span class="hint" style="align-self:center">${API.isMock?'Demo: accounts stay in this browser.':''}</span><button class="btn pink" type="submit">${up?'Create account':'Log in'}</button></div>

@@ -14,7 +14,7 @@
   const CATS = {
     services: ['Hair', 'Nails', 'Lashes', 'Tutoring', 'Repairs', 'Photography', 'Food', 'Other'],
     socs: ['Culture', 'Sport', 'Tech', 'Arts', 'Faith', 'Academic', 'Other'],
-    official: ['NTU', 'NTSU']
+    official: ['University', 'Students’ union']
   };
   const IMG_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
   const MAX_UPLOAD = 5 * 1024 * 1024;
@@ -194,9 +194,8 @@
       need(CATS[q.kind], 400, 'validation_failed', 'kind must be services, socs or official.');
       const term = str(q.q, 100).toLowerCase(), limit = Math.max(1, Math.min(100, parseInt(q.limit, 10) || 24)), offset = Math.max(0, parseInt(q.offset, 10) || 0);
       const hay = l => [l.name, l.cat, l.sub || '', l.desc, ...(l.meta || []), ...[].concat(...(l.menu || []).map(g => [g.group || '', ...g.items.map(i => i.name)]))].join(' ').toLowerCase();
-      const minRating = parseFloat(q.minRating) || 0, campus = str(q.campus, 40).toLowerCase();
+      const minRating = parseFloat(q.minRating) || 0;
       const base = this.s.listings.filter(l => l.kind === q.kind && l.status === 'live' && (!q.category || l.cat === q.category) && (!term || hay(l).includes(term))
-        && (!campus || (l.meta || []).join(' ').toLowerCase().includes(campus))
         && (!minRating || ((this._stats(l).avg || 0) >= minRating)));
       /* facets: how many listings of each type, before the type filter is applied, so the chips can show counts */
       const subs = {}; base.forEach(l => { if (l.sub) subs[l.sub] = (subs[l.sub] || 0) + 1; });
