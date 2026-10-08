@@ -43,6 +43,8 @@ $$('filters').addEventListener('change',e=>{
   if(e.target.id==='f-rate'){B.minRating=+e.target.value||0;loadListings()}
 });
 $$('filters').addEventListener('click',e=>{
+  const fl=e.target.closest('#f-loc');
+  if(fl){if(LOC){setLoc(null);if(B.sort==='near')B.sort='';loadListings()}else askLocation(null,null,fl);return}
   if(e.target.closest('#f-clear')){B.sort='';B.minRating=0;loadListings();$('f-sort').focus()}
 });
 
@@ -91,7 +93,7 @@ function drawChrome(){
   /* keep keyboard focus on the same control when the chips and filters are redrawn */
   const fa=document.activeElement,fkey=fa&&(fa.id||(fa.dataset&&fa.dataset.sub&&'sub:'+fa.dataset.sub));
   const cp=$$('catpanel'),fl=$$('filters'),svc=B.tab==='services';
-  q.placeholder=B.cat&&svc?`Search in ${B.cat}`:'Search braids, Python, netball';
+  q.placeholder=B.cat&&svc?`Search in ${B.cat}`:'Search braids, cakes, nail art';
   if(svc&&B.cat){
     const c=CAT[B.cat]||CAT.Other,types=SUBS[B.cat]||[],f=B.facets.subs||{};
     const all=Object.values(f).reduce((a,n)=>a+n,0);
@@ -104,6 +106,7 @@ function drawChrome(){
     fl.hidden=false;
     fl.innerHTML=`<label class="fsel"><span>Sort</span><select id="f-sort"><option value="">Recommended</option>${[['top','Top rated'],['near','Nearest'],['price','Lowest price'],['reviews','Most reviews'],['reply','Fastest reply']].map(([v,t])=>`<option value="${v}" ${B.sort===v?'selected':''}>${t}</option>`).join('')}</select></label>
       <label class="fsel"><span>Rating</span><select id="f-rate"><option value="">Any rating</option>${[5,4,3,2,1].map(n=>`<option value="${n}" ${B.minRating===n?'selected':''}>${n===5?'5 stars only':n+' stars and up'}</option>`).join('')}</select></label>
+      <button class="typebtn" type="button" id="f-loc" aria-pressed="${!!LOC}">${PIN_ICON}${LOC?'Near you':'Use my location'}</button>
       ${any?'<button class="link" type="button" id="f-clear">Clear filters</button>':''}`;
   }else{fl.hidden=true;fl.innerHTML=''}
   if(fkey){const n=fkey.startsWith('sub:')?cp.querySelector(`[data-sub="${CSS.escape(fkey.slice(4))}"]`):document.getElementById(fkey);if(n&&n!==fa)n.focus()}
@@ -116,7 +119,8 @@ function drawGrid(){
   if(B.status==='error'&&!B.items.length){grid.innerHTML=`<div class="state err" role="alert"><p>${esc(B.err)}</p><button class="btn dark sm" type="button" id="retry">Try again</button></div>`;$('retry').addEventListener('click',()=>loadListings());$$('status').textContent='Could not load listings';return}
   if(!B.items.length){const filtered=B.sub||B.minRating;grid.innerHTML=`<div class="state"><p>Nothing matches${B.term?` "${esc(B.term)}"`:''}${filtered?' with these filters':''} yet.</p>${filtered?'<button class="btn ghost sm" type="button" id="empty-clear">Clear filters</button>':'<span>If you run it, put it on the Board.</span>'}</div>`;const ec=$('empty-clear');if(ec)ec.addEventListener('click',()=>{B.sub=null;B.minRating=0;B.sort='';loadListings()});$$('status').textContent='No listings';return}
   const more=B.items.length<B.total;
-  grid.innerHTML=B.items.map(cardHTML).join('')+(more?`<div class="more"><button class="btn ghost" type="button" id="more" ${B.status==='loading'?'aria-busy="true" disabled':''}>Show more (${B.total-B.items.length} left)</button></div>`:'')
+  const cards=B.items.map(cardHTML);
+  grid.innerHTML=(typeof promoInGrid==='function'?promoInGrid(cards):cards).join('')+(more?`<div class="more"><button class="btn ghost" type="button" id="more" ${B.status==='loading'?'aria-busy="true" disabled':''}>Show more (${B.total-B.items.length} left)</button></div>`:'')
     +(B.status==='error'?`<div class="state err" role="alert"><p>${esc(B.err)}</p><button class="btn dark sm" type="button" id="retry">Try again</button></div>`:'');
   const mb=$('more');if(mb)mb.addEventListener('click',()=>loadListings(true));
   const rb=$('retry');if(rb)rb.addEventListener('click',()=>loadListings(B.items.length>0));
@@ -140,6 +144,7 @@ async function loadListings(append){
     B.status='error';B.err=errMsg(e);
   }
   drawGrid();
+  if(!append&&typeof loadPromo==='function')loadPromo();
 }
 async function loadMeta(){if(!onHome)return;try{B.counts=(await API.meta()).counts;drawChrome()}catch(_){}}
 /* Update one card in place (for example after a new review) without reloading the list. */

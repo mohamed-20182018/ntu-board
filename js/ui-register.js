@@ -4,7 +4,7 @@ const ov=$('overlay'),sheet=$('sheet'),stepEl=$('step'),bars=[...document.queryS
 const MAXPH=4;
 let st={},opener=null;
 const KINDS=[
-  {k:'services',t:'A student business',s:'Hair, nails, tutoring, repairs, food and more',i:ICONS.pound,bg:'var(--butter)'},
+  {k:'services',t:'A student business',s:'Hair, nails, food, photography and more',i:ICONS.pound,bg:'var(--butter)'},
   {k:'official',t:'An official notice',s:'For university and students’ union staff only',i:ICONS.bell,bg:'var(--sky)'}
 ];
 

@@ -19,16 +19,16 @@ const CAT={
   Food:{c:'#B8F2D8',i:'cup'}, Tutoring:{c:'#C9DDFF',i:'book'}, Repairs:{c:'#E0D4FF',i:'bolt'},
   Photography:{c:'#FFC9A8',i:'camera'}, Other:{c:'#DAD6EA',i:'star'}
 };
-const TILES=['Hair','Nails','Food','Tutoring','Repairs','Photography'];
+const TILES=['Hair','Nails','Food','Photography'];
 const LANES=[
-  {k:'services',t:'Student services',d:'Hair, nails, tutoring, repairs and more.',c:'var(--butter)'},
+  {k:'services',t:'Student services',d:'Hair, nails, food, photography and more.',c:'var(--butter)'},
   {k:'official',t:'Official notices',d:'From universities and students’ unions.',c:'var(--sky)'}
 ];
 /* Keep these two lists in step with the backend's allowed categories (docs/API.md, POST /listings). */
-const SUBS={Hair:['Barbers','Braids'],Nails:['Gel & BIAB','Acrylics','Nail art'],Food:['Cakes & bakes','Meal prep','Hot meals','Snacks'],Tutoring:['Coding','Maths & stats','Academic writing','Languages'],Photography:['Grad shoots','Portraits','Events'],Repairs:['Phones']};
+const SUBS={Hair:['Barbers','Braids'],Nails:['Gel & BIAB','Acrylics','Nail art'],Food:['Cakes & bakes','Meal prep','Hot meals','Snacks'],Photography:['Grad shoots','Portraits','Events']};
 /* Where a business is based. Keep in step with the backend (GET /areas). */
 const AREAS=['City centre','Lenton','Radford','Beeston','West Bridgford','Sneinton','Online'];
-const CATS={services:['Hair','Nails','Lashes','Tutoring','Repairs','Photography','Food','Other'],socs:['Culture','Sport','Tech','Arts','Faith','Academic','Other'],official:['University','Students’ union']};
+const CATS={services:['Hair','Nails','Lashes','Food','Photography','Other'],socs:['Culture','Sport','Tech','Arts','Faith','Academic','Other'],official:['University','Students’ union']};
 
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));

@@ -83,6 +83,7 @@ const API = (() => {
     meta: () => get('/meta'),
     top: () => get('/top'),
     recommended: params => get('/recommended', params),
+    promoted: params => get('/promoted', params),
     areas: async () => (await get('/areas')).items,
 
     async signup(b) { const r = await post('/auth/signup', b); setToken(r.token); return r.user; },

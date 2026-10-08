@@ -491,7 +491,7 @@ textarea{resize:vertical;min-height:84px}
 .faq details[open] summary::after{content:"–"}
 .faq details p{margin:0;padding:0 20px 18px;color:var(--muted);max-width:70ch}
 .faq summary:focus-visible{outline:3px solid var(--pink);outline-offset:2px;border-radius:18px}
-#businesses,#students,#reviews,#safety{scroll-margin-top:110px}
+#businesses,#students,#reviews,#safety,#featured{scroll-margin-top:110px}
 
 /* Messages as a page */
 .msg-wrap{padding-block:20px 0}
@@ -510,7 +510,7 @@ textarea{resize:vertical;min-height:84px}
 .reco-ctl{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
 .reco-grid{margin-top:20px}
 .near{display:inline-flex;align-items:center;gap:6px;margin:0 0 12px;font-weight:700;font-size:14px}
-.near::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--mint);border:1.5px solid var(--line)}
+
 
 /* ===== Whole card opens the profile ===== */
 .card{position:relative;transition:transform .12s ease,box-shadow .12s ease}
@@ -524,3 +524,71 @@ textarea{resize:vertical;min-height:84px}
 .card .near::before{content:none}
 .card .near svg{color:var(--pink)}
 @media (prefers-reduced-motion:reduce){.card{transition:none}.card:has(.cardlink):hover{transform:none}}
+
+/* ===== Browse first ===== */
+.browse.first{padding-top:36px}
+.browse-head h1{font-size:clamp(40px,7.5vw,84px);font-weight:900;letter-spacing:-.045em;line-height:.95}
+.browse-head p{font-size:18px}
+
+/* ===== Sponsored placements ===== */
+.spons{display:inline-flex;align-items:center;font:700 11px/1 var(--body);letter-spacing:.02em;background:var(--ink);color:var(--bg);border-radius:6px;padding:4px 7px;vertical-align:middle}
+.why{font-size:13px;color:var(--muted);font-weight:600}
+.why:hover{color:var(--ink)}
+.pv{position:relative;height:150px;border-bottom:2px solid var(--line);display:grid;place-items:center;color:#17131F}
+.pv img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.pv-ic{opacity:.55}
+.pv .av{position:absolute;left:18px;bottom:-30px;box-shadow:0 0 0 3px var(--surface)}
+.pinfo{padding:40px 20px 20px;display:grid;gap:8px;align-content:start;min-width:0}
+.pinfo .svc{justify-self:start}
+.pinfo h3{font-size:20px;font-weight:800;letter-spacing:-.02em;line-height:1.15;margin:0}
+.pinfo .pdesc{margin:0;color:var(--muted);font-size:15px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.pinfo .near{display:inline-flex;align-items:center;gap:6px;margin:0;font-weight:700;font-size:14px}
+.pinfo .near svg{color:var(--pink)}
+.pinfo .rate{margin:0}
+.pinfo .spons{justify-self:start}
+
+/* A: featured row */
+.promo-a{margin-top:28px;padding:20px;border:3px solid var(--line);border-radius:32px;background:var(--butter);box-shadow:6px 6px 0 var(--shadow);color:#17131F}
+.pa-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.pa-head h2{font-size:clamp(22px,3vw,30px);font-weight:900;letter-spacing:-.03em;margin:0}
+.pa-head .why{color:#3E3850;margin-left:auto}
+.pa-row{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(260px,1fr);gap:16px;overflow-x:auto;scroll-snap-type:x mandatory;padding:2px 4px 10px}
+.pcard{position:relative;scroll-snap-align:start;background:var(--surface);color:var(--ink);border:2px solid var(--line);border-radius:24px;overflow:hidden;box-shadow:4px 4px 0 var(--shadow);transition:transform .12s ease,box-shadow .12s ease}
+.pcard:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--shadow)}
+.pcard:has(.cardlink:focus-visible){outline:3px solid var(--pink);outline-offset:3px}
+
+/* B: wide card in the results */
+.card.pwide{grid-column:span 2;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);border-width:3px;border-color:var(--pink);box-shadow:5px 5px 0 var(--pink)}
+.card.pwide .pv{height:auto;min-height:230px;border-bottom:0;border-right:2px solid var(--line)}
+.card.pwide .pv .av{bottom:18px}
+.card.pwide .pinfo{padding:20px}
+@media (max-width:700px){.card.pwide{grid-column:auto;grid-template-columns:1fr}.card.pwide .pv{min-height:150px;border-right:0;border-bottom:2px solid var(--line)}.card.pwide .pv .av{bottom:-30px}.card.pwide .pinfo{padding-top:40px}}
+
+/* C: spotlight */
+.promo-c{margin-top:26px}
+.pc{border:3px solid var(--line);border-radius:36px;overflow:hidden;background:var(--surface);box-shadow:8px 8px 0 var(--pink)}
+.pc-slide{position:relative;display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);min-height:300px}
+.pc .pv{height:auto;border-bottom:0;border-right:2px solid var(--line)}
+.pc .pv .av{left:24px;bottom:24px}
+.pc .pinfo{padding:28px}
+.pc .pinfo h3{font-size:clamp(26px,3.4vw,38px);font-weight:900;letter-spacing:-.035em}
+.pc-ctas{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px;position:relative;z-index:2}
+.pc .cardlink::after{display:none}
+.pc-nav{display:flex;align-items:center;gap:10px;padding:12px 20px;border-top:2px solid var(--line)}
+.pc-nav .why{margin-left:auto}
+.pc-dots{display:flex;gap:8px}
+.pc-dots button{width:12px;height:12px;border-radius:50%;border:2px solid var(--line);background:var(--surface);padding:0;cursor:pointer}
+.pc-dots button[aria-current="true"]{background:var(--pink);width:28px;border-radius:999px}
+.pc-dots button:focus-visible,.pc-nav .x:focus-visible{outline:3px solid var(--pink);outline-offset:2px}
+@media (max-width:760px){.pc-slide{grid-template-columns:1fr}.pc .pv{min-height:170px;border-right:0;border-bottom:2px solid var(--line)}.pc .pv .av{bottom:-30px}.pc .pinfo{padding:40px 20px 20px}}
+
+/* demo switcher */
+.promo-switch{position:fixed;left:16px;bottom:16px;z-index:40;display:flex;flex-wrap:wrap;align-items:center;gap:6px;background:var(--ink);color:var(--bg);border-radius:18px;padding:8px 10px;box-shadow:4px 4px 0 var(--pink);max-width:calc(100vw - 32px);font-size:13px}
+.promo-switch span{font-weight:700;margin-right:4px}
+.promo-switch a{color:var(--bg);text-decoration:none;font-weight:600;padding:5px 10px;border-radius:999px;border:1.5px solid transparent}
+.promo-switch a[aria-current="page"]{background:var(--pink);color:#17131F}
+.promo-switch a:hover{border-color:var(--bg)}
+@media (prefers-reduced-motion:reduce){.pcard{transition:none}.pcard:hover{transform:none}}
+.filters #f-loc{display:inline-flex;align-items:center;gap:6px}
+.filters #f-loc svg{color:var(--pink)}
+.filters #f-loc[aria-pressed="true"] svg{color:var(--bg)}

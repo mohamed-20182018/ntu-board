@@ -12,7 +12,7 @@
   const SEED = (typeof module !== 'undefined' && module.exports) ? require('./seed.js') : root.BOARD_SEED;
 
   const CATS = {
-    services: ['Hair', 'Nails', 'Lashes', 'Tutoring', 'Repairs', 'Photography', 'Food', 'Other'],
+    services: ['Hair', 'Nails', 'Lashes', 'Food', 'Photography', 'Other'],
     socs: ['Culture', 'Sport', 'Tech', 'Arts', 'Faith', 'Academic', 'Other'],
     official: ['University', 'Students’ union']
   };
@@ -95,6 +95,7 @@
       if (method === 'GET' && path === '/meta') return { body: { counts: this._counts() } };
       if (method === 'GET' && path === '/top') return { body: this._top() };
       if (method === 'GET' && path === '/recommended') return { body: this._recommended(q) };
+      if (method === 'GET' && path === '/promoted') return { body: this._promoted(q) };
       if (method === 'GET' && path === '/areas') return { body: { items: Object.keys(AREAS) } };
 
       if (method === 'POST' && path === '/auth/signup') return this._signup(b);
@@ -172,7 +173,7 @@
       return { id: l.id, kind: l.kind, area: l.area || null, name: l.name, cat: l.cat, sub: l.sub || null, desc: l.desc, meta: l.meta || [], contact: l.contact,
         avatar: this._url(l.avatarId), banner: this._url(l.bannerId), photos: (l.photoIds || []).map(i => this._url(i)).filter(Boolean),
         from: l.kind === 'services' ? this._from(l) : null, rating: st.avg == null ? null : Math.round(st.avg * 10) / 10, reviewCount: st.count,
-        status: l.status, example: !!l.example };
+        status: l.status, example: !!l.example, promoted: !!l.promoted };
     }
     _detail(l) { return Object.assign(this._summary(l), { menu: l.menu || [], policy: l.policy || null, sections: l.sections || [], ownerId: l.ownerId, avgResponseSeconds: this._resp(l.id) }); }
     _mine(user) { return this.s.listings.filter(l => l.ownerId === user.id); }
@@ -206,6 +207,17 @@
       }).sort((a, b) => b.score - a.score).slice(0, limit)
         .map(x => Object.assign(this._summary(x.l), { distanceKm: x.d == null ? null : Math.round(x.d * 10) / 10 }));
       return { basis, items };
+    }
+    /* Paid placements. Matches the student's category/type when they have picked one, nearest first if we know where they are. */
+    _promoted(q) {
+      const lat = parseFloat(q.lat), lng = parseFloat(q.lng), here = !isNaN(lat) && !isNaN(lng) ? [lat, lng] : null;
+      const limit = Math.max(1, Math.min(10, parseInt(q.limit, 10) || 5));
+      const dist = l => here && AREAS[l.area] ? km(here, AREAS[l.area]) : null;
+      const items = this.s.listings.filter(l => l.kind === 'services' && l.status === 'live' && l.promoted && (!q.category || l.cat === q.category) && (!q.sub || l.sub === q.sub))
+        .map(l => ({ l, d: dist(l), r: this._stats(l).avg || 0 }))
+        .sort((a, b) => here ? ((a.d == null ? 1e9 : a.d) - (b.d == null ? 1e9 : b.d)) : (b.r - a.r))
+        .slice(0, limit).map(x => Object.assign(this._summary(x.l), { distanceKm: x.d == null ? null : Math.round(x.d * 10) / 10 }));
+      return { items };
     }
     _top() {
       const items = this.s.listings.filter(l => l.kind === 'services' && l.status === 'live').map(l => ({ l, st: this._stats(l) }))
