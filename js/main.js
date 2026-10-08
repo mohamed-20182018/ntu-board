@@ -2,8 +2,28 @@
 (async function boot(){
   if(!API.isMock){const n=$('demo-note');if(n)n.hidden=true}
   renderAuth();
-  /* the arrow on the home page glides down to Browse; normal scrolling still works as usual */
-  document.querySelectorAll('.hero a[href="#browse"]').forEach(cue=>cue.addEventListener('click',e=>{e.preventDefault();const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;$('browse').scrollIntoView({behavior:reduce?'auto':'smooth',block:'start'});history.replaceState(null,'','#browse');setTimeout(()=>{$('q').focus({preventScroll:true})},reduce?0:700)}));
+  /* The arrow on the home page glides down to Browse with an eased scroll. It stops the moment
+     the visitor scrolls themselves (wheel, touch or keys), so manual scrolling always wins. */
+  const cue=$('scroll-cue');
+  if(cue)cue.addEventListener('click',e=>{
+    e.preventDefault();
+    const target=$('browse'),pad=parseFloat(getComputedStyle(target).scrollMarginTop)||0;
+    const to=Math.max(0,target.getBoundingClientRect().top+scrollY-pad),from=scrollY,dist=to-from;
+    const done=()=>{history.replaceState(null,'','#browse');$('q').focus({preventScroll:true})};
+    if(matchMedia('(prefers-reduced-motion: reduce)').matches||Math.abs(dist)<2){scrollTo({top:to,behavior:'instant'});done();return}
+    const dur=Math.min(1400,Math.max(700,Math.abs(dist)*0.9)),ease=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+    let start=null,stop=false;
+    const cancel=()=>{stop=true};
+    ['wheel','touchstart','keydown'].forEach(ev=>addEventListener(ev,cancel,{once:true,passive:true}));
+    const step=ts=>{
+      if(stop)return;
+      if(start===null)start=ts;
+      const t=Math.min(1,(ts-start)/dur);
+      scrollTo({top:from+dist*ease(t),behavior:'instant'});
+      if(t<1)requestAnimationFrame(step);else{['wheel','touchstart','keydown'].forEach(ev=>removeEventListener(ev,cancel));done()}
+    };
+    requestAnimationFrame(step);
+  });
   if(onHome){
     /* links like index.html?cat=Hair#browse or ?tab=socs open the board pre-filtered */
     const p=new URLSearchParams(location.search);
