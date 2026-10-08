@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>How it works | the Board</title>
+<meta name="description" content="How finding, messaging, reviewing and listing work on the Board.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Instrument+Sans:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body data-page="how">
+
+<header id="site-header"></header>
+
+<main id="top">
+  <section class="wrap page-hero">
+    <h1>How the Board works</h1>
+    <p>Find a student business, check what they charge and how they work, message them, then review them once your appointment is done. Running something yourself? List it for free.</p>
+  </section>
+
+  <section class="wrap paths" aria-label="Two ways to use the Board">
+    <div class="path" id="students" style="background:var(--butter)">
+      <h2>Looking for something</h2>
+      <p>Hair, nails, food, photography and more, all run by students.</p>
+      <ol>
+        <li><span><b>Pick a category</b><span>Choose a category, then the type you need, like Barbers or Braids. Search and sort from there.</span></span></li>
+        <li><span><b>Check the profile</b><span>See prices, photos, reviews and how fast they usually reply. Tap the highlights for late fees and policies.</span></span></li>
+        <li><span><b>Message them</b><span>Pick what you want from their menu and it goes into a message with the total. Chats stay on the Board.</span></span></li>
+        <li><span><b>Review after your appointment</b><span>Once the business marks your appointment complete, you can leave one review.</span></span></li>
+      </ol>
+      <a class="btn dark" href="index.html#browse">Browse the Board</a>
+    </div>
+    <div class="path" id="businesses" style="background:var(--mint)">
+      <h2>Running something</h2>
+      <p>A side hustle, a small business, or a society. Free to list, always.</p>
+      <ol>
+        <li><span><b>Make a business account</b><span>Sign up and choose “a student running a business”, or switch from your student account in your dashboard.</span></span></li>
+        <li><span><b>Add your listing</b><span>Your menu and prices, policies, a profile picture, a cover picture and up to four photos of your work.</span></span></li>
+        <li><span><b>Reply to customers</b><span>Messages land in your inbox. Your average reply time shows on your profile, so quick replies help.</span></span></li>
+        <li><span><b>Mark appointments complete</b><span>Do it from the chat. It lets that customer leave you a review, and your dashboard keeps count.</span></span></li>
+      </ol>
+      <button class="btn dark" type="button" data-open-register>List your business</button>
+    </div>
+  </section>
+
+  <section class="wrap info">
+    <div class="infobox" id="reviews">
+      <h2>Why you can trust the reviews</h2>
+      <p>Only students who have had an appointment can leave a review, and only one per business. The business marks the appointment complete, not the customer, so reviews come from real visits.</p>
+    </div>
+    <div class="infobox" id="featured">
+      <h2>Featured and sponsored spots</h2>
+      <p>Businesses can pay to appear in the featured spots on the home page. They are always marked “Sponsored”, they only show when they match the category you picked, and they never change a business’s reviews or rating.</p>
+    </div>
+    <div class="infobox" id="safety">
+      <h2>Staying safe</h2>
+      <ul>
+        <li>Keep chats on the Board so there is a record.</li>
+        <li>Never send card or bank details in a message.</li>
+        <li>Use Report in any chat if something feels wrong.</li>
+        <li>We list businesses, we don't vet them. Check reviews and photos before you book.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="wrap faq" id="faq" aria-labelledby="faq-h">
+    <h2 id="faq-h">Questions</h2>
+    <details><summary>Does it cost anything?</summary><p>No. Browsing, messaging and listing are all free.</p></details>
+    <details><summary>What does “Sponsored” mean?</summary><p>The business paid to be shown in a featured spot. Everything else on the Board, including search results, ratings and reviews, is the same for every business.</p></details>
+    <details><summary>Who can list?</summary><p>Any student running a business or a society. You need a business account to list.</p></details>
+    <details><summary>Is this run by a university?</summary><p>No. The Board is made by students. It is not an official university or students’ union service, and it is open to students from any university.</p></details>
+    <details><summary>Can I review a business I haven't used?</summary><p>No. Reviews unlock once the business marks your appointment complete, so every review comes from a real customer.</p></details>
+    <details><summary>Can I have a student account and a business?</summary><p>Yes. A business account can still message other businesses. Use “My enquiries” in Messages to see those chats.</p></details>
+    <details><summary>How do I change or remove my listing?</summary><p>Email us at hello@theboard.example for now. Editing from your dashboard is coming.</p></details>
+  </section>
+
+  <section class="wrap" aria-labelledby="join-h">
+    <div class="banner">
+      <div><h2 id="join-h">Got a business? List it.</h2><p>Three short steps. Free to list, always.</p></div>
+      <button class="btn dark" type="button" data-open-register>List your business</button>
+    </div>
+  </section>
+</main>
+
+<footer id="site-footer"></footer>
+<noscript><div class="wrap" style="padding-block:24px">The Board needs JavaScript.</div></noscript>
+
+<!-- Order matters: settings, demo backend (remove these two in production), API client, then the screens. -->
+<script src="js/config.js"></script>
+<script src="js/seed.js"></script>
+<script src="js/mock-backend.js"></script>
+<script src="js/api.js"></script>
+<script src="js/ui-core.js"></script>
+<script src="js/ui-shell.js"></script>
+<script src="js/ui-auth.js"></script>
+<script src="js/ui-browse.js"></script>
+<script src="js/ui-register.js"></script>
+<script src="js/ui-detail.js"></script>
+<script src="js/ui-messages.js"></script>
+<script src="js/ui-dashboard.js"></script>
+<script src="js/ui-promo.js"></script>
+<script src="js/ui-profile.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
