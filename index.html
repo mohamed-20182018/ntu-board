@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<script>(function(){try{var t=localStorage.getItem('board-theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
 <title>the Board | NTU student businesses, societies and notices</title>
@@ -20,10 +21,14 @@
   --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
 }
 @media (prefers-color-scheme:dark){
-  :root{
+  :root:not([data-theme="light"]){
     --bg:#120F19; --surface:#1D1828; --ink:#F3F0FA; --muted:#A79FBA; --line:#F3F0FA; --shadow:#000000; --chip:#2A2338;
     --pink:#FF6A9C;
   }
+}
+:root[data-theme="dark"]{
+  --bg:#120F19; --surface:#1D1828; --ink:#F3F0FA; --muted:#A79FBA; --line:#F3F0FA; --shadow:#000000; --chip:#2A2338;
+  --pink:#FF6A9C;
 }
 
 /* ===== Base ===== */
@@ -62,7 +67,7 @@ svg{display:block;flex:none}
 .authnav .me .av{box-shadow:none}
 .authnav .btn{padding:8px 16px}
 .logo{white-space:nowrap}
-@media (max-width:640px){.nav a.l,.authnav .navbtn,.authnav .me span:last-child,.listbtn{display:none}.nav{gap:12px}}
+@media (max-width:640px){.nav a.l,.authnav .navbtn,.authnav .me span:last-child,.listbtn{display:none}.nav{gap:10px}.pill{border-radius:24px;padding:8px 10px 8px 16px}.authnav .btn{padding:8px 14px}}
 
 /* ===== Hero (friend's theme) ===== */
 .hero{position:relative;padding-block:44px 36px}
@@ -83,7 +88,7 @@ svg{display:block;flex:none}
 
 /* ===== Marquee ===== */
 .marquee{display:flex;align-items:stretch;border-block:2px solid var(--line);background:var(--pink);color:var(--onpop);overflow:hidden;white-space:nowrap}
-.mq-label{flex:none;display:flex;align-items:center;padding:0 18px;background:#17131F;color:#fff;font-family:var(--display);font-weight:700;font-size:13px;letter-spacing:0;border-right:2px solid var(--line);z-index:1}
+.mq-label{flex:0 0 20%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;line-height:1.15;padding:10px 10px;background:#17131F;color:#fff;font-family:var(--display);font-weight:700;font-size:13px;letter-spacing:0;border-right:2px solid var(--line);z-index:1;white-space:normal}
 .mq-scroll{flex:1;min-width:0;overflow:hidden}
 .track{display:inline-flex;padding-block:12px;font-family:var(--display);font-weight:700;font-size:15px;animation:slide 40s linear infinite}
 .track span{display:inline-flex;align-items:center}
@@ -159,6 +164,10 @@ footer small{display:block;max-width:70ch;color:var(--muted);font-size:13px}
 .sheet-head{display:flex;justify-content:space-between;align-items:center;gap:12px}
 .sheet h2{font-size:20px;letter-spacing:-.02em;outline:none}
 .x{width:40px;height:40px;border:2px solid var(--line);border-radius:50%;background:var(--surface);display:grid;place-items:center}
+.theme-fab{position:fixed;right:18px;bottom:18px;z-index:30;width:52px;height:52px;border:2px solid var(--line);border-radius:50%;background:var(--surface);color:var(--ink);display:grid;place-items:center;box-shadow:3px 3px 0 var(--shadow);transition:transform .12s,box-shadow .12s}
+.theme-fab:hover{transform:translate(-2px,-2px);box-shadow:5px 5px 0 var(--shadow)}
+.theme-fab:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--shadow)}
+@media (max-width:640px){.theme-fab{right:14px;bottom:14px;width:46px;height:46px}}
 .progress{display:flex;gap:6px;margin:16px 0 20px}
 .progress i{flex:1;height:6px;border-radius:9px;background:var(--chip)}
 .progress i.on{background:var(--pink)}
@@ -308,6 +317,7 @@ textarea{resize:vertical;min-height:84px}
 .mhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
 .mhead h2{font-size:20px;outline:none}
 .mtog{display:grid;grid-template-columns:1fr 1fr;border:2px solid var(--line);border-radius:999px;overflow:hidden}
+.mtog.tri{grid-template-columns:1fr 1fr 1fr}
 .mtog button{background:var(--surface);color:var(--ink);border:0;padding:8px 6px;font:600 13px/1 inherit;cursor:pointer}
 .mtog button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
 .mtog button:focus-visible{outline:3px solid var(--pink);outline-offset:-3px}
@@ -370,7 +380,7 @@ textarea{resize:vertical;min-height:84px}
 
 <main id="top">
   <section class="hero wrap">
-    <div class="eyebrow"><i aria-hidden="true"></i>Made by NTU students · Clifton, City &amp; Brackenhurst</div>
+    <div class="eyebrow"><i aria-hidden="true"></i>Made by NTU students</div>
     <h1>One site for <span class="hl">everything</span> NTU students are <span class="sq">running.</span></h1>
     <p class="lede">Student-run businesses, societies, and official announcements, all in one place. No more digging through <s>five different Instagram pages</s> and <s>muted group chats</s>.</p>
     <div class="hero-ctas">
@@ -386,7 +396,7 @@ textarea{resize:vertical;min-height:84px}
     </div>
   </section>
 
-  <div class="marquee" role="region" aria-label="Top businesses this week"><span class="mq-label">Top businesses this week</span><div class="mq-scroll" aria-hidden="true"><div class="track" id="track"></div></div></div>
+  <div class="marquee" role="region" aria-label="Top businesses this week"><span class="mq-label">Top businesses<br>this week</span><div class="mq-scroll" aria-hidden="true"><div class="track" id="track"></div></div></div>
 
   <section class="wrap browse" id="browse" aria-labelledby="browse-h">
     <h2 class="sr" id="browse-h">Browse the Board</h2>
@@ -447,6 +457,10 @@ textarea{resize:vertical;min-height:84px}
   </div>
 </div>
 <div class="toast" id="toast" role="status" hidden></div>
+
+<button class="theme-fab" type="button" id="open-settings" aria-label="Settings">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 13a7.6 7.6 0 0 0 0-2l2.1-1.6a.5.5 0 0 0 .12-.64l-2-3.4a.5.5 0 0 0-.6-.22l-2.5 1a7.8 7.8 0 0 0-1.7-1l-.38-2.6a.5.5 0 0 0-.5-.44h-4a.5.5 0 0 0-.5.44l-.38 2.6a7.8 7.8 0 0 0-1.7 1l-2.5-1a.5.5 0 0 0-.6.22l-2 3.4a.5.5 0 0 0 .12.64L4.6 11a7.6 7.6 0 0 0 0 2l-2.1 1.6a.5.5 0 0 0-.12.64l2 3.4c.13.22.39.3.6.22l2.5-1c.5.4 1.08.74 1.7 1l.38 2.6c.04.25.26.44.5.44h4c.25 0 .46-.19.5-.44l.38-2.6c.62-.26 1.2-.6 1.7-1l2.5 1c.22.08.48 0 .6-.22l2-3.4a.5.5 0 0 0-.12-.64L19.4 13Z"/></svg>
+</button>
 <noscript><div class="wrap" style="padding-block:24px">The Board needs JavaScript to show listings.</div></noscript>
 
 <script>
@@ -1106,6 +1120,56 @@ document.addEventListener('keydown',e=>{
   else if(!e.shiftKey&&document.activeElement===z){e.preventDefault();a.focus()}
 },true);
 renderAuth();badge();
+
+/* ---------- settings: light / dark / auto theme ---------- */
+const THEME_KEY='board-theme';
+function applyTheme(mode){
+  if(mode==='light'||mode==='dark')document.documentElement.setAttribute('data-theme',mode);
+  else document.documentElement.removeAttribute('data-theme');
+}
+function currentTheme(){try{return localStorage.getItem(THEME_KEY)||'auto'}catch(e){return 'auto'}}
+function setTheme(mode){
+  try{mode==='auto'?localStorage.removeItem(THEME_KEY):localStorage.setItem(THEME_KEY,mode)}catch(e){}
+  applyTheme(mode);drawSettings();
+}
+let sOpener=null;
+const sov=document.createElement('div');
+sov.className='overlay';sov.hidden=true;sov.style.zIndex=80;
+sov.innerHTML='<div class="sheet" id="ssheet" role="dialog" aria-modal="true" aria-labelledby="s-title"></div>';
+document.body.appendChild(sov);
+function drawSettings(){
+  const t=currentTheme();
+  $('ssheet').innerHTML=`<div class="sheet-head"><h2 id="s-title" tabindex="-1">Settings</h2><button class="x" id="s-x" type="button" aria-label="Close"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="f">
+      <label id="s-appearance-label">Appearance</label>
+      <div class="mtog tri" role="group" aria-labelledby="s-appearance-label">
+        <button type="button" data-theme-opt="light" aria-pressed="${t==='light'}">Light</button>
+        <button type="button" data-theme-opt="dark" aria-pressed="${t==='dark'}">Dark</button>
+        <button type="button" data-theme-opt="auto" aria-pressed="${t==='auto'}">Auto</button>
+      </div>
+      <p class="hint" style="margin-top:10px">Auto matches whatever your phone or browser is set to.</p>
+    </div>`;
+}
+function openSettings(btn){
+  sOpener=btn||document.activeElement;sov.hidden=false;document.body.style.overflow='hidden';drawSettings();$('s-title').focus();
+}
+function closeSettings(){sov.hidden=true;if(ov.hidden&&dov.hidden&&mov.hidden&&aov.hidden)document.body.style.overflow='';if(sOpener&&sOpener.isConnected)sOpener.focus()}
+sov.addEventListener('click',e=>{
+  if(e.target===sov||e.target.closest('#s-x')){closeSettings();return}
+  const b=e.target.closest('[data-theme-opt]');if(b)setTheme(b.dataset.themeOpt);
+});
+$('open-settings').addEventListener('click',e=>openSettings(e.currentTarget));
+document.addEventListener('keydown',e=>{
+  if(sov.hidden)return;
+  if(e.key==='Escape'){e.stopImmediatePropagation();closeSettings();return}
+  if(e.key!=='Tab')return;
+  const f=[...sov.querySelectorAll('button,input,select,textarea')].filter(el=>!el.disabled&&el.offsetParent!==null);
+  if(!f.length)return;
+  const a=f[0],z=f[f.length-1];
+  if(e.shiftKey&&(document.activeElement===a||document.activeElement.id==='s-title')){e.preventDefault();z.focus()}
+  else if(!e.shiftKey&&document.activeElement===z){e.preventDefault();a.focus()}
+},true);
+applyTheme(currentTheme());
 
 render();
 </script>
