@@ -581,7 +581,7 @@ function headFor(it,kind){
 }
 function cardHTML(it,kind){
   const h=headFor(it,kind),ph=it.photos||[];
-  const exBadge=kind==='socs'?'':`<span class="ex">${it.mine?'Your preview':'Example'}</span>`;
+  const exBadge=(kind==='socs'||kind==='services')?'':`<span class="ex">${it.mine?'Your preview':'Example'}</span>`;
   const head=ph.length
     ?`<div class="card-head has-photo"><button class="shot" type="button" data-lb="${it.id||''}" aria-label="View ${ph.length} photo${ph.length>1?'s':''} of ${esc(it.name)}"><img src="${ph[0]}" alt="" decoding="async" loading="lazy"></button>${ph.length>1?`<span class="pc">1/${ph.length}</span>`:''}${exBadge}</div>`
     :`<div class="card-head" style="background:${h.bg}">${svg(h.icon,44,1.7)}${exBadge}</div>`;
