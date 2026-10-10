@@ -8,11 +8,21 @@
   --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
 }
 @media (prefers-color-scheme:dark){
-  :root{
+  :root:not([data-theme="light"]){
     --bg:#120F19; --surface:#1D1828; --ink:#F3F0FA; --muted:#A79FBA; --line:#F3F0FA; --shadow:#000000; --chip:#2A2338;
     --pink:#FF6A9C;
   }
 }
+:root[data-theme="dark"]{
+  --bg:#120F19; --surface:#1D1828; --ink:#F3F0FA; --muted:#A79FBA; --line:#F3F0FA; --shadow:#000000; --chip:#2A2338;
+  --pink:#FF6A9C;
+}
+
+/* ===== Settings / theme toggle ===== */
+.theme-fab{position:fixed;right:18px;bottom:18px;z-index:30;width:52px;height:52px;border:2px solid var(--line);border-radius:50%;background:var(--surface);color:var(--ink);display:grid;place-items:center;box-shadow:3px 3px 0 var(--shadow);transition:transform .12s,box-shadow .12s}
+.theme-fab:hover{transform:translate(-2px,-2px);box-shadow:5px 5px 0 var(--shadow)}
+.theme-fab:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--shadow)}
+@media (max-width:640px){.theme-fab{right:14px;bottom:14px;width:46px;height:46px}}
 
 /* ===== Base ===== */
 *{box-sizing:border-box}
@@ -296,6 +306,7 @@ textarea{resize:vertical;min-height:84px}
 .mhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
 .mhead h2{font-size:20px;outline:none}
 .mtog{display:grid;grid-template-columns:1fr 1fr;border:2px solid var(--line);border-radius:999px;overflow:hidden}
+.mtog.tri{grid-template-columns:1fr 1fr 1fr}
 .mtog button{background:var(--surface);color:var(--ink);border:0;padding:8px 6px;font:600 13px/1 inherit;cursor:pointer}
 .mtog button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
 .mtog button:focus-visible{outline:3px solid var(--pink);outline-offset:-3px}

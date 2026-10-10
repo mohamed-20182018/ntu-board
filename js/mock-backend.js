@@ -53,7 +53,7 @@
       for (const kind of ['services', 'socs', 'official']) {
         for (const x of SEED[kind]) {
           const l = Object.assign({ avatarId: null, photoIds: [], policy: null, menu: [], sections: [], sub: null }, x);
-          l.kind = kind; l.status = 'live'; l.example = true; l.ownerId = x.name === 'Fade Theory' ? 'u_owner' : 'u_seed'; l.createdAt = new Date(now - (1000 - order++) * 1000).toISOString();
+          l.kind = kind; l.status = 'live'; l.example = kind === 'official'; l.ownerId = x.name === 'Fade Theory' ? 'u_owner' : 'u_seed'; l.createdAt = new Date(now - (1000 - order++) * 1000).toISOString();
           const revs = l.reviews || []; delete l.reviews;
           revs.forEach((r, i) => s.reviews.push({ id: rid('r'), listingId: l.id, userId: null, rating: r.rating, text: r.text, author: r.author, createdAt: new Date(now - r.ageDays * DAY - i * 3600000).toISOString(), verified: true, example: true }));
           s.listings.push(l);

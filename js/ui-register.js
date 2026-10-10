@@ -151,7 +151,6 @@ function draw(){
     title.textContent=pending?'Sent for review':'You’re on the Board';
     stepEl.innerHTML=`<div class="done"><div class="big-pin" aria-hidden="true"></div>
       <p style="margin:0 0 6px;font-weight:700;font-size:18px">${esc(r.name||st.name)} ${pending?'is waiting for approval.':'is pinned.'}</p>
-      <p style="margin:0;color:var(--muted)">${pending?'Once it has been approved it will show for every student.':'Students can find it now.'}${API.isMock?' Demo: it is saved in this browser only.':''}</p>
       <div class="row-btns" style="justify-content:center"><button class="btn" type="button" id="see">${pending?'Done':'See my listing'}</button></div></div>`;
     $('see').addEventListener('click',()=>{closeSheet();if(pending)return;if($('browse'))$('browse').scrollIntoView({behavior:'smooth'});else location.href='index.html#browse'});
   }
