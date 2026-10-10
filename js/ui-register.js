@@ -128,7 +128,7 @@ function draw(){
     title.textContent='Here’s how it’ll look';
     const item={id:'preview',kind:st.kind,name:st.name,cat:st.cat,sub:st.sub,desc:st.desc,meta:metaList(st.meta),contact:st.contact,preview:true,avatar:st.avatar&&st.avatar.url,banner:st.banner&&st.banner.url,photos:st.photos.map(p=>p.url),rating:null,reviewCount:0};
     stepEl.innerHTML=`<div class="preview-label">Preview</div><div style="pointer-events:none">${cardHTML(item)}</div>
-      <label class="check" for="r-agree"><input type="checkbox" id="r-agree" ${st.agree?'checked':''}>I confirm these are real contact details and I understand the Board is a listings platform only. It doesn’t endorse anyone’s product or service.</label>
+      <label class="check" for="r-agree"><input type="checkbox" id="r-agree" ${st.agree?'checked':''}>I confirm these are real contact details and I understand the Board is a listings platform. It doesn’t endorse anyone’s product or service.</label>
       <p class="err" id="err2" role="alert" ${st.perr?'':'hidden'}>${esc(st.perr||'Tick the box to post your listing.')}</p>
       <div class="row-btns"><button class="btn ghost" type="button" id="back2">Edit</button><button class="btn pink" type="button" id="post">Post to the Board</button></div>`;
     $('back2').addEventListener('click',()=>{st.step=1;st.perr='';draw()});
