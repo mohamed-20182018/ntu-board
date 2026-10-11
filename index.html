@@ -10,6 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Instrument+Sans:wght@400;500;600;700&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 /* ===== Tokens ===== */
 :root{
@@ -437,7 +438,7 @@ textarea{resize:vertical;min-height:84px}
 
 <footer>
   <div class="wrap">
-    <div class="notice"><span class="pin" aria-hidden="true"></span><div><strong>This is a demo.</strong> It's here to show how the Board could work. Press Register to try the sign-up flow for a business or society. Nothing is live yet, and every listing on this page is an example.</div></div>
+    <div class="notice"><span class="pin" aria-hidden="true"></span><div><strong>Business and society listings are real,</strong> submitted by NTU students. Messaging, accounts and reviews are demo features for now and aren't saved anywhere.</div></div>
     <small>The Board is a listings platform only. We don't vet, endorse, or take responsibility for the quality of anyone's product or service.</small>
     <small>Not an official NTU or NTSU service.</small>
     <div class="big" aria-hidden="true">the Board</div>
@@ -491,8 +492,30 @@ const LANES=[
   {k:'official',t:'Official adverts',d:'Notices from NTU and NTSU.',c:'var(--sky)'}
 ];
 
-/* ---------- example data (placeholders until real listings arrive) ---------- */
-const DATA={
+/* ---------- live data (Supabase-backed) ---------- */
+const sb=window.supabase.createClient('https://xvenwgfvgkdauxfkcgcg.supabase.co','sb_publishable_BgpvbiU9CkH2y1WSS3ZPWw_6yTCivS0');
+const SUBS={Hair:['Barbers','Braids'],Nails:['Gel & BIAB','Acrylics','Nail art'],Food:['Cakes & bakes','Meal prep','Hot meals','Snacks'],Tutoring:['Coding','Maths & stats','Academic writing','Languages'],Photography:['Grad shoots','Portraits','Events'],Repairs:['Phones']};
+const SUB_TO_CAT={};
+Object.entries(SUBS).forEach(([c,ss])=>ss.forEach(s=>SUB_TO_CAT[s]=c));
+function bizFromRow(row){
+  const cat=SUB_TO_CAT[row.what]||'Other';
+  return {id:row.id,name:row.name,cat,sub:row.what,desc:row.description||'',meta:[row.location,row.price].filter(Boolean),contact:row.contact||'',menu:row.price?[{g:null,items:[[row.what||'Service',row.price]]}]:[],policy:null,reviews:[],sections:[]};
+}
+function socFromRow(row){
+  return {id:row.id,name:row.name,cat:row.what||'Other',desc:row.description||'',meta:(row.meet||'').split(',').map(s=>s.trim()).filter(Boolean),contact:row.contact||''};
+}
+const DATA={services:[],socs:[],official:[]};
+async function loadData(){
+  const [b,s]=await Promise.all([
+    sb.from('businesses').select('*').order('created_at',{ascending:false}),
+    sb.from('societies').select('*').order('created_at',{ascending:false})
+  ]);
+  DATA.services=(b.data||[]).map(bizFromRow);
+  DATA.socs=(s.data||[]).map(socFromRow);
+  DATA.official=[];
+}
+/* ---------- OLD example data, retained only for reference, unused ----------
+const _UNUSED_DATA={
   services:[
     {"name": "Fade Theory", "cat": "Hair", "sub": "Barbers", "desc": "Clean fades and tapers in my Clifton halls kitchen. Sharp lineups, no rush, good music.", "meta": ["Clifton campus", "Evenings and weekends"], "contact": "@fade.theory", "menu": [{"g": null, "items": [["Fade", "£25"], ["Taper", "£25"], ["Lineup", "£15"]]}, {"g": "Add-ons", "items": [["Beard trim", "+£5"], ["Parting or design", "+£5"]]}], "policy": null, "reviews": [{"s": 5, "t": "Best fade I've had since moving to Nottingham. Booked again straight away.", "w": "Jaden M.", "x": "2 weeks ago"}, {"s": 5, "t": "On time, clean, and he actually listens to what you ask for.", "w": "Kofi A.", "x": "1 month ago"}, {"s": 4, "t": "Great taper. Slightly tight on time before my lecture but no complaints on the cut.", "w": "Dan R.", "x": "1 month ago"}], "sections": [{"t": "Late fees", "k": "fees", "rows": [["Up to 10 minutes", "Grace period, no fee"], ["10 to 15 minutes late", "£5"], ["15 to 20 minutes late", "£10"], ["More than 20 minutes late", "Appointment cancelled"]]}, {"t": "Late policy", "k": "list", "items": ["There is a 10 minute grace period. Message me if you're running behind.", "After the grace period a late fee applies, shown above.", "If your slot is cancelled for lateness, your deposit is kept."]}, {"t": "Hair policies", "k": "list", "items": ["Come with your hair washed or tell me when booking.", "A £10 deposit secures your slot and comes off your total. It is non-refundable.", "Reschedule at least 24 hours ahead to move your deposit.", "Bookings within 24 hours are emergency appointments, +£5.", "Cash or bank transfer accepted."]}]},
     {"name": "Clifton Cuts", "cat": "Hair", "sub": "Barbers", "desc": "Student barber doing fades, tapers and lineups. Walk-ups only if there's a gap, otherwise message first.", "meta": ["Clifton campus", "Mon to Sat"], "contact": "@cliftoncuts", "menu": [{"g": null, "items": [["Fade", "£22 to £25"], ["Taper", "£22"], ["Lineup", "£12 to £15"]]}, {"g": "Add-ons", "items": [["Beard trim", "+£5"]]}], "policy": null, "reviews": [{"s": 4, "t": "Solid cut for the price. Easy to book over Instagram.", "w": "Marcus T.", "x": "3 weeks ago"}, {"s": 5, "t": "Lineup was perfect and it took 20 minutes.", "w": "Ellis W.", "x": "2 months ago"}], "sections": [{"t": "Late fees", "k": "fees", "rows": [["Up to 10 minutes", "Grace period, no fee"], ["10 to 20 minutes late", "£5"], ["More than 20 minutes late", "Appointment cancelled"]]}, {"t": "Late policy", "k": "list", "items": ["10 minute grace period, then a £5 late fee.", "Over 20 minutes late I may give the slot to someone else.", "Let me know in advance if you think you'll be late."]}, {"t": "Hair policies", "k": "list", "items": ["Clean, product-free hair please. A rinse before you come is enough.", "No deposit needed for returning clients, £5 for first-time clients.", "Walk-ups only if there's a free gap.", "Cash only. Please withdraw before your appointment."]}]},
@@ -527,8 +550,7 @@ const DATA={
     {name:'Student rep elections open',cat:'NTSU',desc:'Run to represent your course. Nominations are short and voting happens online.',meta:['All campuses'],contact:'Posted by NTSU'}
   ]
 };
-DATA.services.forEach((x,i)=>{x.id=x.id||'s'+i});
-const SUBS={Hair:['Barbers','Braids'],Nails:['Gel & BIAB','Acrylics','Nail art'],Food:['Cakes & bakes','Meal prep','Hot meals','Snacks'],Tutoring:['Coding','Maths & stats','Academic writing','Languages'],Photography:['Grad shoots','Portraits','Events'],Repairs:['Phones']};
+---------------------------------------------------------------------------- */
 let sub=null;
 const avg=it=>it.reviews&&it.reviews.length?it.reviews.reduce((a,r)=>a+r.s,0)/it.reviews.length:0;
 const stars=(n,sz=14)=>{const r=Math.round(n);return `<span class="stars" role="img" aria-label="${n.toFixed(1)} out of 5">${[1,2,3,4,5].map(i=>`<svg width="${sz}" height="${sz}" viewBox="0 0 24 24" fill="${i<=r?'currentColor':'none'}" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="${ICONS.star}"/></svg>`).join('')}</span>`};
@@ -547,9 +569,10 @@ let tt;
 function say(m){const t=$('toast');t.textContent=m;t.hidden=false;clearTimeout(tt);tt=setTimeout(()=>t.hidden=true,1800)}
 
 /* ---------- marquee ---------- */
-/* TODO backend: replace with this week's top-ranked businesses */
-const TOP=DATA.services.slice().sort((a,b)=>avg(b)-avg(a)||b.reviews.length-a.reviews.length).slice(0,8).map(x=>x.name);
-$('track').innerHTML=TOP.concat(TOP,TOP,TOP).map(w=>`<span>${esc(w)}</span>`).join('');
+function paintMarquee(){
+  const TOP=DATA.services.slice(0,8).map(x=>x.name);
+  $('track').innerHTML=TOP.length?TOP.concat(TOP,TOP,TOP).map(w=>`<span>${esc(w)}</span>`).join(''):'';
+}
 
 /* ---------- tiles ---------- */
 $('tiles').innerHTML=TILES.map(t=>`<button class="tile" type="button" data-cat="${t}" aria-pressed="false" style="background:${CAT[t].c}">${svg(ICONS[CAT[t].i],34,2)}<b>${t}</b></button>`).join('');
@@ -583,7 +606,7 @@ function headFor(it,kind){
 }
 function cardHTML(it,kind){
   const h=headFor(it,kind),ph=it.photos||[];
-  const exBadge=kind==='socs'?'':`<span class="ex">${it.mine?'Your preview':'Example'}</span>`;
+  const exBadge=it.mine?`<span class="ex">Your preview</span>`:'';
   const head=ph.length
     ?`<div class="card-head has-photo"><button class="shot" type="button" data-lb="${it.id||''}" aria-label="View ${ph.length} photo${ph.length>1?'s':''} of ${esc(it.name)}"><img src="${ph[0]}" alt="" decoding="async" loading="lazy"></button>${ph.length>1?`<span class="pc">1/${ph.length}</span>`:''}${exBadge}</div>`
     :`<div class="card-head" style="background:${h.bg}">${svg(h.icon,44,1.7)}${exBadge}</div>`;
@@ -750,9 +773,20 @@ function draw(){
       <div class="row-btns"><button class="btn ghost" type="button" id="back2">Edit</button><button class="btn pink" type="button" id="post">Post to the Board</button></div>`;
     $('back2').addEventListener('click',()=>{st.step=1;draw()});
     $('r-agree').addEventListener('change',e=>{st.agree=e.target.checked});
-    $('post').addEventListener('click',()=>{
+    $('post').addEventListener('click',async()=>{
       if(!st.agree){$('err2').hidden=false;return}
-      DATA[st.kind].unshift(item);
+      const btn=$('post');btn.disabled=true;btn.textContent='Posting…';
+      let row,table;
+      if(st.kind==='services'){
+        table='businesses';
+        row={name:st.name,what:st.sub||st.cat,price:fromPrice(item)||'',location:item.meta[0]||'',description:st.desc,contact:st.contact};
+      }else{
+        table='societies';
+        row={name:st.name,what:st.cat,meet:item.meta.join(', '),description:st.desc,contact:st.contact};
+      }
+      const {error}=await sb.from(table).insert(row);
+      if(error){btn.disabled=false;btn.textContent='Post to the Board';$('err2').textContent='Something went wrong posting this. Try again.';$('err2').hidden=false;return}
+      await loadData();
       tab=st.kind;cat=null;q.value='';render();
       st.step=3;draw();
     });
@@ -760,7 +794,7 @@ function draw(){
     title.textContent='You’re on the Board';
     stepEl.innerHTML=`<div class="done"><div class="big-pin" aria-hidden="true"></div>
       <p style="margin:0 0 6px;font-weight:700;font-size:18px">${esc(st.name)} is pinned.</p>
-      <p style="margin:0;color:var(--muted)">In the real thing, your listing would be reviewed and then shown to every NTU student. In this demo it only appears on your screen until you refresh.</p>
+      <p style="margin:0;color:var(--muted)">Your listing is now live and shown to every NTU student browsing the Board.</p>
       <div class="row-btns" style="justify-content:center"><button class="btn" type="button" id="see">See my listing</button></div></div>`;
     $('see').addEventListener('click',()=>{closeSheet();$('browse').scrollIntoView({behavior:'smooth'})});
   }
@@ -1172,7 +1206,7 @@ document.addEventListener('keydown',e=>{
 },true);
 applyTheme(currentTheme());
 
-render();
+loadData().then(()=>{paintMarquee();render()});
 </script>
 </body>
 </html>
