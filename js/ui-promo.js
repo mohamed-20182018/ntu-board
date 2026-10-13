@@ -2,7 +2,7 @@
    Businesses pay to appear here. It slides through them on its own (pauses on hover, focus,
    or the pause button) and matches the category the student picked, topping up with other
    sponsored businesses so there is always something to scroll through. Data: API.promoted. */
-const P={items:[],seq:0,slide:0,timer:null,hover:false,stopped:false};
+const P={paid:true,items:[],seq:0,slide:0,timer:null,hover:false,stopped:false};
 const REDUCED=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
 const SLIDE_MS=5000;
 
@@ -41,8 +41,8 @@ function drawPromo(){
   if(P.slide>=P.items.length)P.slide=0;
   const n=P.items.length,many=n>1;
   el.hidden=false;
-  el.innerHTML=`<div class="pc-top"><h2 class="pc-label">Sponsored</h2><a class="why" href="how-it-works.html#featured">What’s this?</a></div>
-  <section class="pc" aria-roledescription="carousel" aria-label="Sponsored businesses">
+  el.innerHTML=`<div class="pc-top"><h2 class="pc-label">${P.paid?'Sponsored':'Featured'}</h2>${P.paid?'<a class="why" href="how-it-works.html#featured">What’s this?</a>':''}</div>
+  <section class="pc" aria-roledescription="carousel" aria-label="${P.paid?'Sponsored':'Featured'} businesses">
     <div class="pc-view"><div class="pc-track" id="pc-track" aria-live="${P.stopped?'polite':'off'}">${P.items.map((it,i)=>slideHTML(it,i,n)).join('')}</div></div>
     ${many?`<div class="pc-nav">
       <button class="x" type="button" id="pc-prev" aria-label="Previous">&#8249;</button>
@@ -74,7 +74,13 @@ async function loadPromo(){
   try{
     const r=await API.promoted({category:B.cat,sub:B.sub,lat:LOC&&LOC.lat,lng:LOC&&LOC.lng,limit:6,fill:true});
     if(seq!==P.seq)return;
-    P.items=r.items;P.slide=0;
+    P.items=r.items;P.slide=0;P.paid=true;
+    /* Nobody sponsored yet: feature the best-rated businesses instead, labelled "Featured", not "Sponsored". */
+    if(!P.items.length){
+      const f=await API.listings({kind:'services',category:B.cat,sub:B.sub,sort:'top',limit:5});
+      if(seq!==P.seq)return;
+      P.items=f.items||[];P.paid=false;
+    }
   }catch(_){if(seq!==P.seq)return;P.items=[]}
   drawPromo();
 }
