@@ -1,16 +1,20 @@
-/* The Board: front-end settings. This is the only file you edit to connect a backend.
+/* The Board: front-end settings.
  *
- *   mode: "mock"  Runs entirely in the browser with example data (js/mock-backend.js). No server needed.
- *   mode: "http"  Talks to a real server that implements docs/API.md.
- *
- * To go live: set mode to "http" and apiBase to your API address. Nothing else changes.
+ *   mode: "mock" + supabase   (this site) Listings come from Supabase. Accounts, messages and reviews are a demo
+ *                             kept only in the visitor's browser.
+ *   mode: "mock", no supabase Everything is example data in the browser (for working on the design).
+ *   mode: "http"              Talks to the full backend on the ui-rework branch (backend/, /api/v1).
  */
 window.BOARD_CONFIG = {
   mode: 'mock',
-  apiBase: '/api/v1',          // used when mode is "http". Can be a full URL like https://api.example.com/api/v1
-  useCookies: false,           // true = send cookies (HttpOnly session) instead of a Bearer token
-  pollMs: null,                // how often to check for new messages. null = 4000 (1500 in mock mode)
-  mockLatency: [120, 320],     // fake network delay in mock mode, in ms [min, max]
-  mockPersist: true,           // keep mock data in this browser between refreshes
-  demoLogins: true             // shows the "demo business account" shortcut on the login form. Set false in production
+  supabase: {
+    url: 'https://xvenwgfvgkdauxfkcgcg.supabase.co',
+    key: 'sb_publishable_BgpvbiU9CkH2y1WSS3ZPWw_6yTCivS0'   // public by design; the rules in supabase/security.sql protect the data
+  },
+  apiBase: '/api/v1',
+  useCookies: false,
+  pollMs: null,
+  mockLatency: [60, 160],
+  mockPersist: true,
+  demoLogins: false
 };

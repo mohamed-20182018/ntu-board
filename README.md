@@ -20,7 +20,7 @@ A small team of NTU students — some of us coding it, some of us handling the o
 
 ## Running it locally
 
-Right now it's just a single `index.html` file — clone the repo and open it in a browser. No build step, no dependencies, nothing complicated.
+Plain HTML, CSS and JavaScript, no build step. Clone the repo and open `index.html`, or serve the folder (for example `npx serve .`). Listings load from Supabase; accounts, messages and reviews are a demo kept in your browser. Security set-up (including the Supabase rules you must run once) is in `docs/SECURITY.md`.
 
 ## Status
 

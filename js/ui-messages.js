@@ -6,7 +6,7 @@ const mpage=$('msheet');
 const mov={hidden:true};   /* kept so other screens' "is messages open?" checks still work */
 
 /* mode 's' = I am the student (client). mode 'b' = I run the business. */
-const M={feeForm:false,draft:'',cl:false,mode:'s',th:[],cur:null,curT:null,msgs:[],owns:[],own:null,loading:false,err:'',sig:'',unread:0,seq:0,opener:null,tmp:0};
+const M={readAt:null,typing:false,lastTyped:0,feeForm:false,draft:'',cl:false,mode:'s',th:[],cur:null,curT:null,msgs:[],owns:[],own:null,loading:false,err:'',sig:'',unread:0,seq:0,opener:null,tmp:0};
 const asOf=()=>M.mode==='s'?'client':'business';
 const meFrom=()=>M.mode==='s'?'client':'business';
 
@@ -21,7 +21,7 @@ async function refreshBadge(){
 }
 function closeMsgIfOpen(){M.owns=[];M.own=null;M.th=[];M.cur=null;M.curT=null;M.msgs=[];refreshBadgeCount(0);if(mpage)drawSignedOut()}
 
-const sigOf=()=>JSON.stringify([M.mode,M.cur,M.loading,M.cl,M.err,M.th.map(t=>[t.id,t.unread,t.lastMessage&&t.lastMessage.id]),M.msgs.map(m=>m.id+(m.sending?'~':'')),M.curT&&M.curT.appointmentCompleted,M.feeForm,M.curT&&(M.curT.lateFees||[]).map(f=>f.status)]);
+const sigOf=()=>JSON.stringify([M.mode,M.cur,M.loading,M.cl,M.err,M.th.map(t=>[t.id,t.unread,t.lastMessage&&t.lastMessage.id]),M.msgs.map(m=>m.id+(m.sending?'~':'')),M.curT&&M.curT.appointmentCompleted,M.feeForm,M.readAt,M.typing,M.curT&&(M.curT.lateFees||[]).map(f=>f.status)]);
 const other=t=>M.mode==='s'?{name:t.listingName,cat:t.listingCat,avatar:t.listingAvatar}:{name:t.clientName,cat:'Other',avatar:t.clientAvatar};
 
 function drawMsg(force){
@@ -49,7 +49,7 @@ function drawMsg(force){
       ${M.mode==='s'?`<button class="btn sm ghost" type="button" id="m-prof">Profile</button>`:`<button class="btn sm ghost" type="button" id="m-fee" aria-expanded="${M.feeForm}">Add late fee</button><button class="btn sm" type="button" id="m-done" ${cur.appointmentCompleted?'disabled':''}>${cur.appointmentCompleted?'Appointment complete':'Mark appointment complete'}</button>`}
       <button class="link" type="button" id="m-rep">Report</button></div>
       ${M.mode==='b'&&M.feeForm?`<form class="feeform" id="m-feeform"><label class="fsel"><span>Late fee</span><select id="fee-amt">${[5,10,15,20].map(a=>`<option value="${a}">£${a}</option>`).join('')}</select></label><label class="fsel"><span>Minutes late</span><input type="number" id="fee-min" min="1" max="180" inputmode="numeric" placeholder="e.g. 15"></label><button class="btn pink sm" type="submit">Add</button><button class="link" type="button" id="fee-cancel">Cancel</button></form>`:''}
-      <div class="mmsgs" id="m-log" role="log" aria-live="polite" aria-label="Conversation with ${esc(o.name)}">${M.cl?'<div class="sk" style="height:40px;width:60%;margin:8px 0" aria-hidden="true"></div><div class="sk" style="height:40px;width:45%;margin:8px 0 8px auto" aria-hidden="true"></div>':M.msgs.length?M.msgs.map(m=>m.from==='system'?sysMsgHTML(m):`<div class="mb ${m.from===me?'me':'them'}${m.sending?' sending':''}"><span>${esc(m.text)}</span><small>${m.sending?'Sending…':esc(msgTime(m.createdAt))}${m.auto?' · Demo reply':''}</small></div>`).join(''):'<div class="msys">Say hello. Ask about prices, availability or booking.</div>'}</div>
+      <div class="mmsgs" id="m-log" role="log" aria-live="polite" aria-label="Conversation with ${esc(o.name)}">${M.cl?'<div class="sk" style="height:40px;width:60%;margin:8px 0" aria-hidden="true"></div><div class="sk" style="height:40px;width:45%;margin:8px 0 8px auto" aria-hidden="true"></div>':M.msgs.length?M.msgs.map(m=>m.from==='system'?sysMsgHTML(m):`<div class="mb ${m.from===me?'me':'them'}${m.sending?' sending':''}"><span>${esc(m.text)}</span><small>${m.sending?'Sending…':esc(msgTime(m.createdAt))}${m.auto?' · Demo reply':''}${m.from===me&&!m.sending?tickHTML(m):''}</small></div>`).join('')+(M.typing?`<div class="mb them mtyping"><span><i></i><i></i><i></i></span><small>${esc(other(cur).name.split(' ')[0])} is typing…</small></div>`:''):'<div class="msys">Say hello. Ask about prices, availability or booking.</div>'}</div>
       ${M.mode==='s'?`<div class="mq">${['Are you free this week?','What is your price for this?','Can I reschedule?'].map(x=>`<button type="button" class="chipbtn" data-q="${esc(x)}">${esc(x)}</button>`).join('')}</div>`:''}
       <form class="mform" id="m-form"><label class="sr" for="m-in">Message</label><input type="text" id="m-in" maxlength="500" autocomplete="off" placeholder="Write a message"><button class="btn pink" type="submit">Send</button></form>
       <p class="hint mnote">Keep chats on the Board. Never share card or bank details.${API.isMock?' Demo: messages stay in this browser.':''}</p></div>`;
@@ -62,13 +62,22 @@ function drawMsg(force){
   const rt=$('m-retry');if(rt)rt.addEventListener('click',()=>loadThreads());
 }
 
+/* Read receipts: one tick in a pink circle = sent, two ticks = read. */
+const TICK1='<svg width="9" height="9" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 6.3l2.4 2.4 4.6-5"/></svg>';
+const TICK2='<svg width="11" height="9" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 6.3l2.4 2.4 4.6-5"/><path d="M6.5 8.4l.3.3 4.6-5"/></svg>';
+function tickHTML(m){
+  const read=M.readAt&&Date.parse(M.readAt)>=Date.parse(m.createdAt);
+  return read?`<span class="rc read" title="Read" aria-label="Read">${TICK2}</span>`:`<span class="rc" title="Sent" aria-label="Sent">${TICK1}</span>`;
+}
+const setReceipts=x=>{if(!x)return;if(x.otherReadAt!==undefined)M.readAt=x.otherReadAt||null;if(x.otherTyping!==undefined)M.typing=!!x.otherTyping};
+
 /* System notices. Late fee notices show their status, and the business can mark them paid or waived. */
 function sysMsgHTML(m){
   const f=m.lateFeeId&&M.curT&&(M.curT.lateFees||[]).find(x=>x.id===m.lateFeeId);
   if(!f)return `<div class="msys">${esc(m.text)}</div>`;
   return `<div class="msys fee">${esc(m.text)} <span class="chip fee-${f.status}">${f.status==='unpaid'?'Unpaid':f.status==='paid'?'Paid':'Waived'}</span>${M.mode==='b'&&f.status==='unpaid'?` <button class="link" type="button" data-fee="${esc(f.id)}" data-st="paid">Mark paid</button> <button class="link" type="button" data-fee="${esc(f.id)}" data-st="waived">Waive</button>`:''}</div>`;
 }
-async function reloadChat(id){try{const r=await API.thread(id,asOf());if(M.cur===id){M.curT=r.thread;M.msgs=r.messages}}catch(e){say(errMsg(e))}drawMsg(true)}
+async function reloadChat(id){try{const r=await API.thread(id,asOf());if(M.cur===id){M.curT=r.thread;M.msgs=r.messages;setReceipts(r.thread)}}catch(e){say(errMsg(e))}drawMsg(true)}
 
 /* ---------- data ---------- */
 async function loadOwns(){
@@ -88,11 +97,11 @@ async function loadThreads(){
   M.loading=false;drawMsg();
 }
 async function loadChat(id){
-  const seq=++M.seq;M.cur=id;M.curT=M.th.find(t=>t.id===id)||M.curT;M.msgs=[];M.cl=true;drawMsg();
+  const seq=++M.seq;M.cur=id;M.curT=M.th.find(t=>t.id===id)||M.curT;M.msgs=[];M.cl=true;M.readAt=null;M.typing=false;drawMsg();
   try{
     const r=await API.thread(id,asOf());
     if(seq!==M.seq||M.cur!==id)return;
-    M.curT=r.thread;M.msgs=r.messages;
+    M.curT=r.thread;M.msgs=r.messages;setReceipts(r.thread);
     if(r.thread.unread){API.markRead(id,asOf()).catch(()=>{});const t=M.th.find(x=>x.id===id);if(t)t.unread=0;M.curT.unread=0;refreshBadge()}
   }catch(e){if(seq===M.seq){say(errMsg(e));M.cur=null;M.curT=null}}
   if(seq===M.seq)M.cl=false;
@@ -108,17 +117,28 @@ async function pollTick(){
     const list=mode==='s'?await API.threads('client'):(own?await API.threads('business',own):[]);
     if(mode!==M.mode||own!==M.own)return;
     M.th=list;
-    if(cur&&M.cur===cur){
-      const lastReal=[...M.msgs].reverse().find(m=>!m.sending);
-      const fresh=await API.newMessages(cur,lastReal?lastReal.id:null,asOf());
-      if(M.cur===cur){
-        const have=new Set(M.msgs.map(m=>m.id)),add=fresh.filter(m=>!have.has(m.id));
-        if(add.length){M.msgs=M.msgs.concat(add);const t=M.th.find(x=>x.id===cur);if(t&&t.unread){API.markRead(cur,asOf()).catch(()=>{});t.unread=0}}
-        const t=M.th.find(x=>x.id===cur);if(t)M.curT=Object.assign({},t,{unread:0});
-      }
-    }
+    if(cur&&M.cur===cur){const t=M.th.find(x=>x.id===cur);if(t){t.unread=0;M.curT=Object.assign({},t,{unread:0,otherReadAt:M.readAt,otherTyping:M.typing})}}
     drawMsg();refreshBadge();
   }catch(_){}
+}
+/* The open chat is checked more often (every 2 seconds) so new messages, read receipts and "typing…" feel live. */
+let chatBusy=false;
+async function chatTick(){
+  if(!USER||document.hidden||!mpage||!M.cur||M.cl||chatBusy)return;
+  const cur=M.cur,as=asOf();chatBusy=true;
+  try{
+    const lastReal=[...M.msgs].reverse().find(m=>!m.sending);
+    const r=await API.chatPoll(cur,lastReal?lastReal.id:null,as);
+    if(M.cur!==cur)return;
+    setReceipts(r);
+    const have=new Set(M.msgs.map(m=>m.id)),add=(r.items||[]).filter(m=>!have.has(m.id));
+    if(add.length){
+      M.msgs=M.msgs.concat(add);
+      /* you're looking at the chat, so new messages from the other side count as read */
+      if(add.some(m=>m.from!==meFrom())){API.markRead(cur,as).catch(()=>{});const t=M.th.find(x=>x.id===cur);if(t){t.unread=0;t.lastMessage=add[add.length-1]}}
+    }
+    drawMsg();
+  }catch(_){}finally{chatBusy=false}
 }
 
 /* ---------- page start-up and navigation ---------- */
@@ -169,6 +189,7 @@ async function mSend(text){
   const id=M.cur,as=asOf(),tmp={id:'tmp'+(++M.tmp),from:meFrom(),text,createdAt:new Date().toISOString(),sending:true};
   M.msgs.push(tmp);drawMsg();
   try{
+    M.lastTyped=0;
     const real=await API.sendMessage(id,text,as);
     if(M.cur!==id)return;
     const i=M.msgs.findIndex(m=>m.id===tmp.id);
@@ -217,5 +238,12 @@ if(mpage)mpage.addEventListener('submit',async e=>{e.preventDefault();
     return;
   }if(e.target.id==='m-form'){const v=$('m-in').value;$('m-in').value='';mSend(v);$('m-in').focus()}});
 setInterval(pollTick,API.pollMs);
+setInterval(chatTick,API.isMock?1500:2000);
+/* Tell the other side you're typing, at most every 3 seconds. */
+if(mpage)mpage.addEventListener('input',e=>{
+  if(e.target.id!=='m-in'||!M.cur||!e.target.value.trim())return;
+  const now=Date.now();if(now-M.lastTyped<3000)return;M.lastTyped=now;
+  API.typing(M.cur,asOf()).catch(()=>{});
+});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)pollTick()});
 

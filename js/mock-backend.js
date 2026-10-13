@@ -38,6 +38,8 @@
     constructor(opts) {
       this.opts = Object.assign({ state: null, onChange: null, demoActAsAnyOwner: false, autoReply: true }, opts || {});
       this.s = this.opts.state || this._seed();
+      /* external: listings come from outside (Supabase) via setExternal(); no example listings, reviews or chats */
+      if (this.opts.external) { this.s.listings = this.s.listings.filter(l => !l.example && !l.external); this._prune(); }
       this.s.lateFees = this.s.lateFees || [];
     }
 
@@ -53,7 +55,7 @@
       for (const kind of ['services', 'socs', 'official']) {
         for (const x of SEED[kind]) {
           const l = Object.assign({ avatarId: null, photoIds: [], policy: null, menu: [], sections: [], sub: null }, x);
-          l.kind = kind; l.status = 'live'; l.example = kind === 'official'; l.ownerId = x.name === 'Fade Theory' ? 'u_owner' : 'u_seed'; l.createdAt = new Date(now - (1000 - order++) * 1000).toISOString();
+          l.kind = kind; l.status = 'live'; l.example = true; l.ownerId = x.name === 'Fade Theory' ? 'u_owner' : 'u_seed'; l.createdAt = new Date(now - (1000 - order++) * 1000).toISOString();
           const revs = l.reviews || []; delete l.reviews;
           revs.forEach((r, i) => s.reviews.push({ id: rid('r'), listingId: l.id, userId: null, rating: r.rating, text: r.text, author: r.author, createdAt: new Date(now - r.ageDays * DAY - i * 3600000).toISOString(), verified: true, example: true }));
           s.listings.push(l);
@@ -75,6 +77,20 @@
       return s;
     }
 
+    /* Replace the outside listings (from Supabase) and drop anything that pointed at listings that are gone. */
+    setExternal(list) {
+      this.s.listings = this.s.listings.filter(l => !l.external && !l.example).concat(list || []);
+      this._prune(); this._changed();
+    }
+    _prune() {
+      const ids = new Set(this.s.listings.map(l => l.id));
+      this.s.reviews = this.s.reviews.filter(r => ids.has(r.listingId));
+      this.s.threads = this.s.threads.filter(t => ids.has(t.listingId));
+      const tids = new Set(this.s.threads.map(t => t.id));
+      this.s.messages = this.s.messages.filter(m => tids.has(m.threadId));
+      this.s.appointments = this.s.appointments.filter(a => ids.has(a.listingId));
+      this.s.lateFees = (this.s.lateFees || []).filter(f => ids.has(f.listingId));
+    }
     _changed() { if (this.opts.onChange) this.opts.onChange(this.s); }
     reset() { this.s = this._seed(); this._changed(); }
 
@@ -105,6 +121,9 @@
       if (method === 'POST' && path === '/auth/signup') return this._signup(b);
       if (method === 'POST' && path === '/auth/login') return this._login(b);
       if (method === 'POST' && path === '/auth/logout') { if (req.token) { delete this.s.sessions[req.token]; this._changed(); } return { status: 204 }; }
+      /* Demo mode sends no emails, so these just answer the way the real backend does. */
+      if (method === 'POST' && (path === '/auth/forgot' || path === '/auth/resend-verification')) return { status: 204 };
+      if (method === 'POST' && (path === '/auth/verify' || path === '/auth/reset')) throw new HttpError(400, 'invalid_token', 'Email links only work with the real backend, not in demo mode.');
       if (method === 'GET' && path === '/auth/me') { this._auth(user); return { body: { user: this._pubUser(user) } }; }
 
       if (method === 'GET' && path === '/listings') return this._list(q);
@@ -126,9 +145,10 @@
       if (method === 'GET' && path === '/threads') return this._threads(this._auth(user), q);
       if (method === 'POST' && path === '/threads') return this._openThread(this._auth(user), b);
       if (method === 'GET' && (p = m(/^\/threads\/([^/]+)$/))) { const { t, role } = this._thread(p[0], this._auth(user), q.as); return { body: { thread: this._threadView(t, role), messages: this._msgs(t.id) } }; }
-      if (method === 'GET' && (p = m(/^\/threads\/([^/]+)\/messages$/))) { const { t } = this._thread(p[0], this._auth(user), q.as); return { body: { items: this._msgs(t.id, q.after) } }; }
+      if (method === 'GET' && (p = m(/^\/threads\/([^/]+)\/messages$/))) { const { t, role } = this._thread(p[0], this._auth(user), q.as); return { body: Object.assign({ items: this._msgs(t.id, q.after) }, this._receipts(t, role)) }; }
+      if (method === 'POST' && (p = m(/^\/threads\/([^/]+)\/typing$/))) { const { t, role } = this._thread(p[0], this._auth(user), q.as); t.typingAt = t.typingAt || {}; t.typingAt[role] = Date.now(); return { status: 204 }; }
       if (method === 'POST' && (p = m(/^\/threads\/([^/]+)\/messages$/))) return this._send(this._auth(user), p[0], b, q.as || b.as);
-      if (method === 'POST' && (p = m(/^\/threads\/([^/]+)\/read$/))) { const { t, role } = this._thread(p[0], this._auth(user), q.as); t.unread[role] = 0; this._changed(); return { status: 204 }; }
+      if (method === 'POST' && (p = m(/^\/threads\/([^/]+)\/read$/))) { const { t, role } = this._thread(p[0], this._auth(user), q.as); t.unread[role] = 0; t.readAt = t.readAt || {}; t.readAt[role] = new Date().toISOString(); this._changed(); return { status: 204 }; }
       if (method === 'POST' && (p = m(/^\/threads\/([^/]+)\/complete$/))) return this._complete(this._auth(user), p[0], q.as);
       if (method === 'GET' && path === '/me/profile') return { body: this._profile(this._auth(user), true) };
       if (method === 'POST' && path === '/me/profile') {
@@ -370,7 +390,12 @@
       const st = this._stats(l);
       return { id: t.id, listingId: l.id, listingName: l.name, listingCat: l.cat, listingSub: l.sub || null, listingAvatar: this._url(l.avatarId), listingRating: st.avg == null ? null : Math.round(st.avg * 10) / 10, listingReviewCount: st.count, avgResponseSeconds: this._resp(l.id), clientId: t.clientId, clientName: c ? c.name : 'Student',
         lastMessage: last ? { id: last.id, from: last.from, text: last.text, createdAt: last.createdAt } : null, unread: t.unread[role] || 0, clientAvatar: c ? this._url(c.avatarId) : null, clientLateFeeDefaults: this._userStats(t.clientId).lateFeeDefaults,
-        lateFees: this.s.lateFees.filter(f => f.threadId === t.id).map(f => this._feeView(f)), appointmentCompleted: !!t.completed || this._hasAppt(t.clientId, l.id) };
+        lateFees: this.s.lateFees.filter(f => f.threadId === t.id).map(f => this._feeView(f)), appointmentCompleted: !!t.completed || this._hasAppt(t.clientId, l.id), ...this._receipts(t, role) };
+    }
+    /* read receipts and "typing…" as seen by `role` (about the other side) */
+    _receipts(t, role) {
+      const o = role === 'business' ? 'client' : 'business';
+      return { otherReadAt: (t.readAt || {})[o] || null, otherTyping: Date.now() - ((t.typingAt || {})[o] || 0) < 6000 };
     }
     _threads(user, q) {
       const as = q.as === 'business' ? 'business' : 'client';
@@ -392,6 +417,8 @@
     _openThread(user, b) {
       const l = this._listing(str(b.listingId, 80));
       need(l.kind === 'services', 400, 'validation_failed', 'You can only message businesses.');
+      /* Messages on the Board are still a demo, so nobody at a real listing would see them. */
+      need(!l.external, 400, 'validation_failed', 'Messaging on the Board isn’t live yet. Contact them directly: ' + l.contact);
       need(l.ownerId !== user.id, 400, 'validation_failed', 'That is your own listing.');
       let t = this.s.threads.find(x => x.clientId === user.id && x.listingId === l.id), created = false;
       if (!t) { t = { id: rid('th'), listingId: l.id, clientId: user.id, createdAt: new Date().toISOString(), unread: { client: 0, business: 0 }, completed: false }; this.s.threads.unshift(t); created = true; }
@@ -404,6 +431,7 @@
       const { t, role } = this._thread(id, user, as), text = str(b.text, 500);
       if (!text) throw bad('Write a message first.');
       const from = role === 'business' ? 'business' : 'client', m = this._addMsg(t, from, text);
+      t.readAt = t.readAt || {}; t.readAt[from] = new Date().toISOString(); t.unread[from] = 0; if (t.typingAt) t.typingAt[from] = 0;
       if (from === 'business') t.unread.client++; else { t.unread.business++; this._autoReply(t); }
       this._changed();
       return { status: 201, body: { message: m } };
@@ -411,6 +439,7 @@
     _autoReply(t) {
       if (!this.opts.autoReply) return;
       setTimeout(() => {
+        t.readAt = t.readAt || {}; t.readAt.business = new Date().toISOString();   // the demo business "reads" your message, then answers
         this._addMsg(t, 'business', 'Thanks for your message! I will get back to you shortly.', { auto: true });
         t.unread.client++; this._changed();
       }, 1400);

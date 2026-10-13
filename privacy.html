@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script src="js/theme-boot.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Privacy notice | the Board</title>
+<meta name="description" content="How the Board handles your information.">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body data-page="privacy">
+
+<header id="site-header"></header>
+
+<main id="top">
+  <section class="wrap page-hero">
+    <h1>Privacy notice</h1>
+    <p>What we collect, why, who can see it, and how to have it removed. Last updated 12 October 2026.</p>
+  </section>
+  <article class="wrap legal">
+    <h2 id="who">Who we are</h2>
+    <p>The Board is run by DAXSintech, Nottingham, UK. We are the “controller” of your personal data under UK data protection law (UK GDPR and the Data Protection Act 2018).</p>
+    <h2 id="contact">Contact us</h2>
+    <p>Email <a href="mailto:daxsintech@gmail.com">daxsintech@gmail.com</a>. We aim to reply within a few days, and within one month for data requests.</p>
+
+    <h2>What we collect</h2>
+    <ul>
+      <li><b>Listings you send us:</b> the business or society name, what it is, price, area or meeting times, a description and a contact handle (for example an Instagram name or Discord link). These are shown publicly once we approve them.</li>
+      <li><b>Nothing else is sent to us.</b> Accounts, messages, reviews and profiles on the Board are a demo for now. They are stored only in your own browser and never reach our servers. Don’t use a real password for them.</li>
+      <li>Our hosting provider records basic technical information (such as IP addresses) in short-lived server logs to keep the site running and secure.</li>
+    </ul>
+    <p>We don’t use analytics or advertising trackers, we don’t sell data, and our fonts and code are served from our own site.</p>
+
+    <h2>Why we use it, and our legal basis</h2>
+    <ul>
+      <li><b>Showing your listing</b> so students can find you: our legitimate interest in running a free directory, and yours in being found. You choose what to send.</li>
+      <li><b>Checking listings and stopping spam:</b> our legitimate interest in keeping the Board accurate and safe.</li>
+    </ul>
+
+    <h2>Companies that process data for us</h2>
+    <ul>
+      <li><b>Vercel</b>: hosts the website.</li>
+      <li><b>Supabase</b>: stores listings (<mark class="todo">[your Supabase project region, from Supabase → Settings → General]</mark>).</li>
+    </ul>
+    <p>These may be US companies. Where data leaves the UK it is protected by the safeguards UK law requires (the UK–US data bridge or the UK’s approved contract clauses).</p>
+
+    <h2>How long we keep it</h2>
+    <p>A listing stays until you ask us to remove it, or until we remove it because it’s out of date or breaks our <a href="terms.html">terms</a>. Listings we don’t approve are deleted.</p>
+
+    <h2 id="rights">Your rights</h2>
+    <p>You can ask to see, correct or delete your listing or any other data we hold, or object to how we use it. Email <a href="mailto:daxsintech@gmail.com">daxsintech@gmail.com</a>. If you’re unhappy with how we handle your data, you can complain to the Information Commissioner’s Office at <a href="https://ico.org.uk/make-a-complaint/" rel="noopener">ico.org.uk</a>.</p>
+
+    <h2 id="cookies">Cookies and browser storage</h2>
+    <p>The Board doesn’t set any cookies. It keeps a few things in your browser’s storage, which stay on your device:</p>
+    <table class="ltable"><thead><tr><th>Name</th><th>What it does</th></tr></thead><tbody>
+      <tr><td><code>board-theme</code></td><td>Remembers light or dark mode, if you chose one.</td></tr>
+      <tr><td><code>board.demo.sb1</code>, <code>board.token</code></td><td>The demo accounts, messages and reviews you create. Only on this device.</td></tr>
+      <tr><td><code>board.loc</code></td><td>Your rounded location, only if you chose to share it, to sort by distance. Only on this device.</td></tr>
+    </tbody></table>
+    <p>Clearing your browser’s site data removes all of these.</p>
+
+    <h2>Age</h2>
+    <p>The Board is for people aged 16 and over.</p>
+
+    <h2>Changes</h2>
+    <p>If we change this notice we’ll update the date at the top.</p>
+  </article>
+</main>
+
+<footer id="site-footer"></footer>
+<noscript><div class="wrap" style="padding-block:24px">The Board needs JavaScript.</div></noscript>
+
+<!-- Order matters: settings, demo backend (remove these two in production), API client, then the screens. -->
+<script src="js/config.js"></script>
+<script src="js/seed.js"></script>
+<script src="js/mock-backend.js"></script>
+<script src="js/api.js"></script>
+<script src="js/ui-core.js"></script>
+<script src="js/ui-shell.js"></script>
+<script src="js/ui-theme.js"></script>
+<script src="js/ui-auth.js"></script>
+<script src="js/ui-browse.js"></script>
+<script src="js/ui-register.js"></script>
+<script src="js/ui-detail.js"></script>
+<script src="js/ui-messages.js"></script>
+<script src="js/ui-dashboard.js"></script>
+<script src="js/ui-promo.js"></script>
+<script src="js/ui-profile.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

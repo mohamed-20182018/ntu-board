@@ -1,0 +1,8 @@
+# Files that should never be published on the website
+server/
+docs/
+supabase/
+README.md
+.DS_Store
+**/.DS_Store
+*.md

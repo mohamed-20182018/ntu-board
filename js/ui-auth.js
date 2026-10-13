@@ -14,19 +14,65 @@ function setUser(u){USER=u;renderAuth();$('open-dash').hidden=!u;if(typeof refre
 
 function drawAuth(msg,keep){
   keep=keep||{};
+  if(aMode==='forgot'){
+    $('asheet').innerHTML=`<div class="sheet-head"><h2 id="a-title" tabindex="-1">Reset your password</h2><button class="x" id="a-x" type="button" aria-label="Close">${X_ICON}</button></div>
+    <p style="margin:12px 0">Enter the email you signed up with and we’ll send you a link to choose a new password.</p>
+    <form id="a-form" novalidate>
+      <div class="f"><label for="a-email">Email</label><input type="text" inputmode="email" id="a-email" autocomplete="email" placeholder="you@example.com" value="${esc(keep.email)}"></div>
+      <div class="ts" id="a-ts"></div>
+      <p class="err" id="a-err" role="alert" ${msg?'':'hidden'}>${esc(msg||'')}</p>
+      <div class="row-btns"><button class="btn ghost" type="button" data-am="in">Back to log in</button><button class="btn pink" type="submit">Send reset link</button></div>
+    </form>`;
+    tsMount();
+    return;
+  }
   const up=aMode==='up';
   $('asheet').innerHTML=`<div class="sheet-head"><h2 id="a-title" tabindex="-1">${up?'Join the Board':'Welcome back'}</h2><button class="x" id="a-x" type="button" aria-label="Close">${X_ICON}</button></div>
     <div class="mtog" role="group" aria-label="Sign up or log in" style="margin:14px 0"><button type="button" data-am="up" aria-pressed="${up}">Sign up</button><button type="button" data-am="in" aria-pressed="${!up}">Log in</button></div>
     <form id="a-form" novalidate>
       ${up?`<div class="f"><label for="a-name">Your name</label><input type="text" id="a-name" autocomplete="name" maxlength="40" value="${esc(keep.name)}"></div>`:''}
       <div class="f"><label for="a-email">Email</label><input type="text" inputmode="email" id="a-email" autocomplete="email" placeholder="you@example.com" value="${esc(keep.email)}"></div>
-      <div class="f"><label for="a-pw">Password ${up?'<span class="hint">at least 8 characters</span>':''}</label><input type="password" id="a-pw" autocomplete="${up?'new-password':'current-password'}"></div>
+      <div class="f"><label for="a-pw">Password ${up?'<span class="hint">at least 8 characters</span>':''}</label><input type="password" id="a-pw" autocomplete="${up?'new-password':'current-password'}" maxlength="128">
+        ${up?'':'<button class="link" type="button" data-am="forgot" style="margin-top:6px">Forgot password?</button>'}</div>
       ${up?`<div class="f"><label for="a-type">I'm joining as</label><select id="a-type"><option value="student">A student looking for services</option><option value="business" ${keep.type==='business'?'selected':''}>A student running a business or society</option></select></div>
-      <label class="check" for="a-agree"><input type="checkbox" id="a-agree" ${keep.agree?'checked':''}>I understand the Board is a listings platform and is not an official university or students’ union service.</label>`:''}
+      <label class="check" for="a-agree"><input type="checkbox" id="a-agree" ${keep.agree?'checked':''}>I agree to the <a href="terms.html" target="_blank" rel="noopener">Terms of use</a> and have read the <a href="privacy.html" target="_blank" rel="noopener">Privacy notice</a>. I understand the Board is a listings platform only and is not an official university or students’ union service.</label>
+      <div class="ts" id="a-ts"></div>`:''}
       <p class="err" id="a-err" role="alert" ${msg?'':'hidden'}>${esc(msg||'')}</p>
       ${API.cfg.demoLogins&&!up?'<p class="hint" style="margin:0 0 10px">Demo: see the business side with <button class="link" type="button" id="a-demo">the demo business account</button> (owner@demo.test / demo1234).</p>':''}
-      <div class="row-btns"><button class="btn pink" type="submit">${up?'Create account':'Log in'}</button></div>
+      <div class="row-btns"><span class="hint" style="align-self:center">${API.isMock?'Demo: accounts stay in this browser.':''}</span><button class="btn pink" type="submit">${up?'Create account':'Log in'}</button></div>
     </form>`;
+  if(up)tsMount();
+}
+/* Bot check (Cloudflare Turnstile) on sign-up and "forgot password". Only shown when the server has it switched on. */
+const TS={key:undefined,ready:null,token:'',wid:null};
+async function tsKey(){if(TS.key===undefined){try{TS.key=(await API.authConfig()).turnstileSiteKey||null}catch(_){TS.key=null}}return TS.key}
+function tsLoad(){
+  if(!TS.ready)TS.ready=new Promise((res,rej)=>{const s=document.createElement('script');s.src='https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';s.async=true;s.onload=res;s.onerror=()=>{TS.ready=null;rej()};document.head.appendChild(s)});
+  return TS.ready;
+}
+async function tsMount(){
+  TS.token='';
+  if(TS.wid!=null&&window.turnstile){try{turnstile.remove(TS.wid)}catch(_){}TS.wid=null}
+  const el=$('a-ts');if(!el)return;
+  const k=await tsKey();if(!k||!el.isConnected)return;
+  try{await tsLoad()}catch(_){return}
+  if(!el.isConnected)return;
+  TS.wid=turnstile.render(el,{sitekey:k,callback:t=>{TS.token=t},'expired-callback':()=>{TS.token=''},'error-callback':()=>{TS.token=''}});
+}
+const tsMissing=()=>TS.key&&!TS.token;
+
+/* "Check your email" after signing up (kind 'verify') or asking for a password reset (kind 'reset'). */
+let aEmail='';
+function drawNotice(kind,email,lead){
+  aEmail=email;aMode='notice';
+  const body=kind==='verify'
+    ?`${lead?esc(lead)+' ':''}We’ve sent a link to <b>${esc(email)}</b>. Open it to confirm your email and you’re in. The link works once and expires in 24 hours.`
+    :`If <b>${esc(email)}</b> has an account on the Board, we’ve sent it a link to choose a new password. The link works once and expires in 30 minutes.`;
+  $('asheet').innerHTML=`<div class="sheet-head"><h2 id="a-title" tabindex="-1">${kind==='verify'&&lead?'Confirm your email first':'Check your email'}</h2><button class="x" id="a-x" type="button" aria-label="Close">${X_ICON}</button></div>
+    <p style="margin:14px 0">${body}</p>
+    <p class="hint" style="margin:0 0 14px">Can’t find it? Check your spam or junk folder.${API.isMock?' (Demo mode doesn’t send emails.)':''}</p>
+    <div class="row-btns"><button class="btn ghost" type="button" data-am="in">Back to log in</button>${kind==='verify'?'<button class="btn" type="button" id="a-resend">Send it again</button>':''}</div>`;
+  $('a-title').focus();
 }
 function openAuth(mode,cb,btn){
   aMode=mode;afterAuth=cb||null;aOpener=btn||document.activeElement;
@@ -36,7 +82,14 @@ function closeAuth(){aov.hidden=true;if(dov.hidden&&mov.hidden&&ov.hidden)docume
 
 aov.addEventListener('click',e=>{
   if(e.target===aov||e.target.closest('#a-x')){closeAuth();return}
-  const m=e.target.closest('[data-am]');if(m){aMode=m.dataset.am;drawAuth();$('a-title').focus();return}
+  const m=e.target.closest('[data-am]');if(m){const em=$('a-email')?$('a-email').value.trim():aEmail;aMode=m.dataset.am;drawAuth(null,{email:em});$('a-title').focus();return}
+  const rs=e.target.closest('#a-resend');
+  if(rs){
+    rs.disabled=true;rs.textContent='Sending…';
+    API.resendVerification(aEmail).then(()=>{rs.textContent='Sent';say('Sent again. Check your inbox.')},err=>{rs.textContent='Send it again';say(errMsg(err))})
+      .finally(()=>setTimeout(()=>{if(rs.isConnected){rs.disabled=false;rs.textContent='Send it again'}},30000));
+    return;
+  }
   if(e.target.closest('#a-demo')){$('a-email').value='owner@demo.test';$('a-pw').value='demo1234';$('a-form').requestSubmit()}
   const ug=e.target.closest('#up-yes');
   if(ug)doUpgrade(ug);
@@ -45,6 +98,14 @@ aov.addEventListener('click',e=>{
 aov.addEventListener('submit',async e=>{
   e.preventDefault();
   if(!$('a-form'))return;
+  if(aMode==='forgot'){
+    const email=$('a-email').value.trim();
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){drawAuth('Add a valid email address.',{email});$('a-email').focus();return}
+    if(tsMissing()){const er=$('a-err');er.textContent='Please complete the “I’m human” check first.';er.hidden=false;return}
+    const done=busy(e.target.querySelector('button[type=submit]'),'Sending…');
+    try{await API.forgotPassword(email,TS.token||undefined)}catch(err){done();drawAuth(errMsg(err),{email});return}
+    drawNotice('reset',email);return;
+  }
   const up=aMode==='up';
   const keep={name:up?$('a-name').value.trim():'',email:$('a-email').value.trim(),type:up?$('a-type').value:'',agree:up&&$('a-agree').checked};
   const pw=$('a-pw').value;
@@ -54,11 +115,19 @@ aov.addEventListener('submit',async e=>{
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(keep.email))miss.push('a valid email address');
   if(pw.length<8)miss.push('a password of at least 8 characters');
   if(up&&!keep.agree)miss.push('your agreement to continue');
+  if(!miss.length&&up&&tsMissing()){const er=$('a-err');er.textContent='Please complete the “I’m human” check first.';er.hidden=false;return}
   if(miss.length){drawAuth('Add '+miss.join(', ')+'.',keep);(up&&!keep.name?$('a-name'):$('a-email')).focus();return}
   const done=busy(e.target.querySelector('button[type=submit]'),up?'Creating…':'Logging in…');
   let user;
-  try{user=up?await API.signup({name:keep.name,email:keep.email,password:pw,type:keep.type}):await API.login({email:keep.email,password:pw})}
-  catch(err){done();drawAuth(errMsg(err),keep);$('a-pw').focus();return}
+  try{
+    if(up){const r=await API.signup({name:keep.name,email:keep.email,password:pw,type:keep.type,turnstileToken:TS.token||undefined});if(r.pending){drawNotice('verify',r.email||keep.email);return}user=r.user}
+    else user=await API.login({email:keep.email,password:pw});
+  }
+  catch(err){
+    done();
+    if(err.code==='email_unverified'){drawNotice('verify',keep.email,'You need to confirm your email before you can log in.');return}
+    drawAuth(errMsg(err),keep);$('a-pw').focus();return;
+  }
   setUser(user);
   const cb=afterAuth;afterAuth=null;aOpener=$('auth-nav');
   aov.hidden=true;if(dov.hidden&&mov.hidden)document.body.style.overflow='';

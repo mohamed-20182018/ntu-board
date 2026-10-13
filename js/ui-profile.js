@@ -46,7 +46,17 @@ function drawProfile(){
     <section class="dsec2" aria-labelledby="pf-rel"><h2 id="pf-rel" class="pf-h">Reliability</h2>${pfStats(d.stats,self)}</section>
     ${self&&d.lateFees&&d.lateFees.length?`<section class="dsec2" aria-labelledby="pf-fees"><h2 id="pf-fees" class="pf-h">Late fees</h2>${d.lateFees.map(f=>`<div class="drow"><div class="grow"><b>£${esc(f.amount)} · ${esc(f.listingName)}</b><small>${f.minutes?esc(f.minutes)+' minutes late · ':''}${esc(relTime(f.createdAt))}</small></div><span class="chip fee-${f.status}">${feeStatus[f.status]}</span></div>`).join('')}</section>`:''}
     ${d.listings&&d.listings.length?`<section class="dsec2" aria-labelledby="pf-lst"><h2 id="pf-lst" class="pf-h">${self?'Your listings':'Listings'}</h2>${d.listings.map(l=>`<div class="drow">${avatar(l,44)}<div class="grow"><b>${esc(l.name)}</b><small>${esc(l.sub||l.cat)}${l.reviewCount?` · ${l.rating.toFixed(1)} stars (${l.reviewCount})`:''}</small></div><button class="btn ghost sm" type="button" data-view="${esc(l.id)}">View profile</button></div>`).join('')}</section>`:''}
-    ${self?`<div class="pf-links"><button class="btn dark sm" type="button" id="pf-dash">${biz?'Business dashboard':'Your dashboard'}</button><a class="btn ghost sm" href="messages.html">Messages</a></div>`:''}`;
+    ${self?`<div class="pf-links"><button class="btn dark sm" type="button" id="pf-dash">${biz?'Business dashboard':'Your dashboard'}</button><a class="btn ghost sm" href="messages.html">Messages</a></div>`:''}
+    ${self&&API.isMock?`<section class="dsec2" aria-labelledby="pf-data"><h2 id="pf-data" class="pf-h">Your data</h2><p class="hint pf-note">Your account is a demo kept only in this browser. Clearing this site’s data in your browser deletes it. See our <a href="privacy.html">privacy notice</a>.</p></section>`:''}
+    ${self&&!API.isMock?`<section class="dsec2" aria-labelledby="pf-data"><h2 id="pf-data" class="pf-h">Your data</h2>
+      <p class="hint pf-note">Download a copy of everything we hold about you, or delete your account. See our <a href="privacy.html">privacy notice</a>.</p>
+      <div class="pf-links"><a class="btn ghost sm" href="${esc(API.isMock?'#':API.exportUrl())}" id="pf-export" download="the-board-my-data.json">Download my data</a><button class="btn ghost sm danger" type="button" id="pf-del" aria-expanded="${!!PF.deleting}">Delete my account</button></div>
+      ${PF.deleting?`<form class="pf-del" id="pf-delform" novalidate>
+        <p><b>This can’t be undone.</b> Your account, listings, conversations and pictures will be deleted. Reviews you wrote stay on businesses’ pages without your name.</p>
+        <div class="f"><label for="pf-delpw">Type your password to confirm</label><input type="password" id="pf-delpw" autocomplete="current-password" maxlength="128"></div>
+        <p class="err" id="pf-delerr" role="alert" hidden></p>
+        <div class="pf-links"><button class="btn ghost sm" type="button" id="pf-delno">Keep my account</button><button class="btn sm danger-solid" type="submit">Delete my account for good</button></div>
+      </form>`:''}</section>`:''}`;
 }
 async function loadProfile(){
   if(!pfMain)return;
@@ -61,6 +71,9 @@ if(pfMain){
     const t=e.target;
     if(t.closest('#pf-login')){openAuth('in',null,t);return}
     if(t.closest('#pf-retry')){loadProfile();return}
+    if(t.closest('#pf-export')&&API.isMock){e.preventDefault();say('Demo mode keeps your data in this browser only.');return}
+    if(t.closest('#pf-del')){PF.deleting=!PF.deleting;drawProfile();if(PF.deleting)$('pf-delpw').focus();return}
+    if(t.closest('#pf-delno')){PF.deleting=false;drawProfile();$('pf-del').focus();return}
     if(t.closest('#pf-edit')){PF.editing=true;PF.pic=null;drawProfile();$('pf-title').focus();return}
     if(t.closest('#pf-cancel')){PF.editing=false;drawProfile();$('pf-edit').focus();return}
     if(t.closest('#pf-pic-rm')){PF.pic={id:'',url:''};drawProfile();return}
@@ -78,6 +91,15 @@ if(pfMain){
   });
   pfMain.addEventListener('submit',async e=>{
     e.preventDefault();
+    if(e.target.id==='pf-delform'){
+      const pw=$('pf-delpw').value,er=$('pf-delerr');
+      if(!pw){er.textContent='Type your password to confirm.';er.hidden=false;$('pf-delpw').focus();return}
+      const done=busy(e.target.querySelector('button[type=submit]'),'Deleting…');
+      try{await API.deleteAccount(pw)}catch(err){done();er.textContent=errMsg(err);er.hidden=false;$('pf-delpw').focus();return}
+      PF.deleting=false;setUser(null);
+      pfMain.innerHTML='<div class="mempty-page"><h1>Account deleted</h1><p>Your account and everything in it has been deleted. We’ve sent a confirmation to your email.</p><a class="btn pink" href="index.html">Back to the Board</a></div>';
+      return;
+    }
     const name=$('pf-name').value.trim(),bio=$('pf-bio').value.trim(),er=$('pf-err');
     if(!name){er.textContent='Add your name.';er.hidden=false;$('pf-name').focus();return}
     const done=busy(e.target.querySelector('button[type=submit]'),'Saving…');

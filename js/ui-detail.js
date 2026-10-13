@@ -13,7 +13,7 @@ function reviewBox(it){
   const v=dRev.viewer;
   if(v.reason==='already_reviewed')return `<div class="rvlock" role="status"><b>Thanks, you've reviewed this business.</b> Each student can leave one review per business.</div>`;
   if(v.reason==='login')return `<div class="rvlock"><b>Log in to leave a review.</b> Reviews are for signed-in students who've had an appointment with this business.<br><button class="btn pink sm" type="button" data-auth="in" style="margin-top:10px">Log in or sign up</button></div>`;
-  if(v.reason==='no_appointment')return `<div class="rvlock"><b>Reviews are for students who've had an appointment.</b> Once your appointment with ${esc(it.name)} is marked complete, you can leave one review.${API.isMock?'<br><button class="link" type="button" id="demo-done">Demo only: pretend I\'ve had an appointment</button>':''}</div>`;
+  if(v.reason==='no_appointment')return `<div class="rvlock"><b>Reviews are for students who've had an appointment.</b> Once your appointment with ${esc(it.name)} is marked complete, you can leave one review.${API.isMock&&!it.external?'<br><button class="link" type="button" id="demo-done">Demo only: pretend I\'ve had an appointment</button>':''}</div>`;
   return `<form class="rvform" id="rvf" novalidate>
         <p class="hint" style="margin:0 0 8px">Posting as ${esc(USER?USER.name:'you')}</p>
         <div class="f"><label for="rv-s">Rating</label><select id="rv-s"><option value="">Choose</option>${[5,4,3,2,1].map(x=>`<option value="${x}">${x} out of 5</option>`).join('')}</select></div>
@@ -99,9 +99,9 @@ function drawDetail(){
   const hls=hlList(it);
   const cc=CAT[it.cat]||CAT.Other,own=USER&&it.ownerId===USER.id,items=menuItems(it);
   $('dbody').innerHTML=`<div class="dcover" style="background:${cc.c}">${it.banner?`<img src="${esc(it.banner)}" alt="" decoding="async">`:`<span class="pat">${svg(ICONS[cc.i],64,1.4)}</span>`}</div>
-    <div class="dprof tw">${avatar(it,104)}<div class="dinfo"><span class="svc">${esc(it.sub||it.cat)}</span>
+    <div class="dprof tw">${avatar(it,104)}<div class="dinfo"><p class="dname">${esc(it.name)}</p><span class="svc">${esc(it.sub||it.cat)}</span></div></div>
     <div class="stat-line">${n?`<span>${stars(avg,16)} <b>${avg.toFixed(1)}</b> from ${n} review${n>1?'s':''}</span>`:'<span>No reviews yet</span>'}${it.kind==='services'?replyLine(it.avgResponseSeconds):''}${whereText(it)?`<span class="rtime">${PIN_ICON}${esc(whereText(it))}</span>`:''}</div>
-    ${own?'<p class="hint" style="margin:10px 0 0">This is your listing.</p>':`<button class="btn pink sm" type="button" data-dm="${esc(it.id)}" style="margin-top:10px">Message ${esc(it.name)}</button>`}</div></div>
+    ${own?'<p class="hint" style="margin:10px 0 0">This is your listing.</p>':`<button class="btn pink sm" type="button" data-dm="${esc(it.id)}" style="margin-top:12px">Message ${esc(it.name)}</button>`}
     <p style="margin:12px 0 0">${esc(it.desc)}</p>
     <div class="meta" style="margin-top:10px">${(it.meta||[]).map(m=>`<span>${esc(m)}</span>`).join('')}</div>
     ${(it.photos||[]).length?`<div class="dphotos">${it.photos.map((p,i)=>`<button type="button" data-p="${i}" aria-label="View photo ${i+1}"><img src="${esc(p)}" alt=""></button>`).join('')}</div>`:''}

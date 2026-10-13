@@ -36,4 +36,6 @@
   if(API.hasToken()){try{setUser(await API.me());restored=true}catch(_){}}
   if(!restored&&typeof initMessagesPage==='function')initMessagesPage();
   if(!restored&&typeof loadProfile==='function')loadProfile();
+  /* links in emails (index.html#login) open the login form */
+  if(location.hash==='#login'&&!USER){history.replaceState(null,'',location.pathname+location.search);openAuth('in')}
 })();
