@@ -438,7 +438,7 @@ textarea{resize:vertical;min-height:84px}
 
 <footer>
   <div class="wrap">
-    <div class="notice"><span class="pin" aria-hidden="true"></span><div><strong>Business and society listings are real,</strong> submitted by NTU students. Messaging, accounts and reviews are demo features for now and aren't saved anywhere.</div></div>
+    <div class="notice"><span class="pin" aria-hidden="true"></span><div><strong>Business and society listings are real,</strong> submitted by NTU students. Messaging and reviews are demo features for now and aren't saved anywhere.</div></div>
     <small>The Board is a listings platform only. We don't vet, endorse, or take responsibility for the quality of anyone's product or service.</small>
     <small>Not an official NTU or NTSU service.</small>
     <div class="big" aria-hidden="true">the Board</div>
@@ -1077,72 +1077,141 @@ document.addEventListener('keydown',e=>{
   else if(!e.shiftKey&&document.activeElement===z){e.preventDefault();a.focus()}
 },true);
 
-/* ---------- accounts: sign up and log in (demo, in memory) ---------- */
-/* Demo only: nothing is stored or verified and passwords are never kept.
-   The real site needs a backend that verifies the NTU email, hashes passwords and issues sessions. */
-const ACCOUNTS=[];let USER=null,afterAuth=null,aMode='up',aOpener=null;
+/* ---------- accounts: real sign up, log in and profile with Supabase Auth ----------
+   Replaces the old demo accounts section (from "accounts: sign up and log in (demo"
+   down to and including the line "renderAuth();badge();").                           */
+let USER=null,afterAuth=null,aMode='up',aOpener=null,aEmail='';
+const NTU_EMAIL=/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const XSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+
+function userFrom(u){
+  if(!u)return null;
+  const m=u.user_metadata||{};
+  return {id:u.id,email:u.email,name:m.name||u.email.split('@')[0],type:m.type||'student',created:u.created_at};
+}
+function friendly(err){
+  const t=(err&&err.message)||'';
+  if(/invalid login/i.test(t))return 'That email or password is wrong.';
+  if(/expired|invalid.*(otp|token)|token.*(expired|invalid)/i.test(t))return 'That code is wrong or has expired. Ask for a new one.';
+  if(/rate limit|too many|security purposes/i.test(t))return 'Too many tries. Wait a minute, then try again.';
+  if(/weak|password should/i.test(t))return 'Pick a stronger password.';
+  return t||'Something went wrong. Try again.';
+}
+function renderAuth(){
+  $('auth-nav').innerHTML=USER
+    ?`<button class="navbtn me" type="button" data-auth="profile" aria-label="Your profile">${avatar({name:USER.name,cat:'Other'},28)}<span>Hi, ${esc(USER.name.split(' ')[0])}</span></button>`
+    :`<button class="navbtn" type="button" data-auth="in">Log in</button><button class="btn" type="button" data-auth="up">Sign up</button>`;
+}
+
+/* ---- auth sheet: sign up, log in, email code, forgot password ---- */
 const aov=document.createElement('div');
 aov.className='overlay';aov.hidden=true;aov.style.zIndex=70;
 aov.innerHTML='<div class="sheet" id="asheet" role="dialog" aria-modal="true" aria-labelledby="a-title"></div>';
 document.body.appendChild(aov);
-function renderAuth(){
-  const n=$('auth-nav');
-  n.innerHTML=USER
-    ?`<span class="me">${avatar({name:USER.name,cat:'Other'},28)}<span>Hi, ${esc(USER.name.split(' ')[0])}</span></span><button class="navbtn" type="button" data-auth="out">Log out</button>`
-    :`<button class="navbtn" type="button" data-auth="in">Log in</button><button class="btn" type="button" data-auth="up">Sign up</button>`;
-}
-function drawAuth(msg){
-  const up=aMode==='up';
-  $('asheet').innerHTML=`<div class="sheet-head"><h2 id="a-title" tabindex="-1">${up?'Join the Board':'Welcome back'}</h2><button class="x" id="a-x" type="button" aria-label="Close"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
-    <div class="mtog" role="group" aria-label="Sign up or log in" style="margin:14px 0"><button type="button" data-am="up" aria-pressed="${up}">Sign up</button><button type="button" data-am="in" aria-pressed="${!up}">Log in</button></div>
-    <form id="a-form" novalidate>
-      ${up?`<div class="f"><label for="a-name">Your name</label><input type="text" id="a-name" autocomplete="name" maxlength="40"></div>`:''}
-      <div class="f"><label for="a-email">NTU email <span class="hint">ends in ntu.ac.uk</span></label><input type="text" inputmode="email" id="a-email" autocomplete="email" placeholder="n1234567@my.ntu.ac.uk"></div>
-      <div class="f"><label for="a-pw">Password ${up?'<span class="hint">at least 8 characters</span>':''}</label><input type="password" id="a-pw" autocomplete="${up?'new-password':'current-password'}"></div>
+const field=(id,label,type,extra)=>`<div class="f"><label for="${id}">${label}</label><input type="${type}" id="${id}" ${extra||''}></div>`;
+const codeField=()=>field('a-code','Code from the email','text','inputmode="numeric" autocomplete="one-time-code" maxlength="8"');
+
+function drawAuth(info){
+  const m=aMode,up=m==='up';
+  const titles={up:'Join the Board',in:'Welcome back',code:'Check your email',forgot:'Reset your password',reset:'Choose a new password'};
+  const labels={up:'Create account',in:'Log in',code:'Confirm email',forgot:'Send code',reset:'Save new password'};
+  let body='';
+  if(m==='up'||m==='in'){
+    body=`<div class="mtog" role="group" aria-label="Sign up or log in" style="margin:14px 0"><button type="button" data-am="up" aria-pressed="${up}">Sign up</button><button type="button" data-am="in" aria-pressed="${!up}">Log in</button></div>
+      ${up?field('a-name','Your name','text','autocomplete="name" maxlength="40"'):''}
+      ${field('a-email','Email','text',`inputmode="email" autocomplete="email" placeholder="you@example.com" value="${esc(aEmail)}"`)}
+      ${field('a-pw','Password'+(up?' <span class="hint">at least 8 characters</span>':''),'password',`autocomplete="${up?'new-password':'current-password'}"`)}
       ${up?`<div class="f"><label for="a-type">I'm joining as</label><select id="a-type"><option value="student">A student looking for services</option><option value="business">A student running a business or society</option></select></div>
-      <label class="check" for="a-agree"><input type="checkbox" id="a-agree">I understand the Board is a listings platform only and is not an official NTU or NTSU service.</label>`:''}
-      <p class="err" id="a-err" role="alert" ${msg?'':'hidden'}>${esc(msg||'')}</p>
-      <div class="row-btns"><span class="hint" style="align-self:center">Demo: nothing is saved or sent.</span><button class="btn pink" type="submit">${up?'Create account':'Log in'}</button></div>
+      <label class="check" for="a-agree"><input type="checkbox" id="a-agree">I understand the Board is a listings platform only and is not an official NTU or NTSU service.</label>`
+      :`<button class="link" type="button" data-am="forgot">Forgot your password?</button>`}`;
+  }else if(m==='code'){
+    body=`<p>We sent a code to <b>${esc(aEmail)}</b>. Type it in to confirm this is your email.</p>${codeField()}<button class="link" type="button" id="a-resend">Send a new code</button>`;
+  }else if(m==='forgot'){
+    body=`<p>Enter your email and we'll send you a code to reset your password.</p>${field('a-email','Email','text',`inputmode="email" autocomplete="email" value="${esc(aEmail)}"`)}<button class="link" type="button" data-am="in">Back to log in</button>`;
+  }else{
+    body=`<p>We sent a code to <b>${esc(aEmail)}</b>.</p>${codeField()}${field('a-pw','New password <span class="hint">at least 8 characters</span>','password','autocomplete="new-password"')}<button class="link" type="button" id="a-resend">Send a new code</button>`;
+  }
+  $('asheet').innerHTML=`<div class="sheet-head"><h2 id="a-title" tabindex="-1">${titles[m]}</h2><button class="x" id="a-x" type="button" aria-label="Close">${XSVG}</button></div>
+    <form id="a-form" novalidate>${body}
+      <p class="hint" id="a-info" role="status" ${info?'':'hidden'}>${esc(info||'')}</p>
+      <p class="err" id="a-err" role="alert" hidden></p>
+      <div class="row-btns"><span></span><button class="btn pink" type="submit">${labels[m]}</button></div>
     </form>`;
+  $('a-title').focus();
 }
 function openAuth(mode,cb,btn){
   aMode=mode;afterAuth=cb||null;aOpener=btn||document.activeElement;
-  aov.hidden=false;document.body.style.overflow='hidden';drawAuth();$('a-title').focus();
+  aov.hidden=false;document.body.style.overflow='hidden';drawAuth();
 }
 function closeAuth(){aov.hidden=true;if(dov.hidden&&mov.hidden&&ov.hidden)document.body.style.overflow='';if(aOpener&&aOpener.isConnected)aOpener.focus()}
-aov.addEventListener('click',e=>{
-  if(e.target===aov||e.target.closest('#a-x')){closeAuth();return}
-  const m=e.target.closest('[data-am]');if(m){aMode=m.dataset.am;drawAuth();$('a-title').focus()}
-});
-aov.addEventListener('submit',e=>{
-  e.preventDefault();
-  const email=$('a-email').value.trim().toLowerCase(),pw=$('a-pw').value,up=aMode==='up';
-  const name=up?$('a-name').value.trim():'';
-  const miss=[];
-  if(up&&!name)miss.push('your name');
-  if(!/^[^\s@]+@([a-z0-9-]+\.)*ntu\.ac\.uk$/.test(email))miss.push('a valid NTU email ending in ntu.ac.uk');
-  if(pw.length<8)miss.push('a password of at least 8 characters');
-  if(up&&!$('a-agree').checked)miss.push('your agreement to continue');
-  if(miss.length){const keep=[name,email];drawAuth('Add '+miss.join(', ')+'.');if(up)$('a-name').value=keep[0];$('a-email').value=keep[1];(up?$('a-name'):$('a-email')).focus();return}
-  let acct;
-  if(up){
-    if(ACCOUNTS.some(a=>a.email===email)){drawAuth('That email already has an account. Log in instead.');return}
-    acct={name,email,type:$('a-type').value};ACCOUNTS.push(acct);
-  }else{
-    acct=ACCOUNTS.find(a=>a.email===email);
-    if(!acct){drawAuth('No account found for that email in this demo. Sign up first.');return}
-  }
-  USER=acct;renderAuth();badge();
+function aFail(msg,btn,label){const e=$('a-err');e.textContent=msg;e.hidden=false;if(btn){btn.disabled=false;btn.textContent=label}}
+
+async function finishAuth(isNew,msg){
+  const {data:{user}}=await sb.auth.getUser();
+  USER=userFrom(user);renderAuth();badge();
   const cb=afterAuth;afterAuth=null;aOpener=$('auth-nav');
   aov.hidden=true;if(dov.hidden&&mov.hidden)document.body.style.overflow='';
-  say(up?'Welcome to the Board, '+acct.name.split(' ')[0]:'Logged in');
+  say(msg||(isNew?'Welcome to the Board, '+USER.name.split(' ')[0]:'Logged in'));
   if(cb)cb();
-  else if(up&&acct.type==='business')openSheet({currentTarget:$('auth-nav')});
+  else if(isNew&&USER.type==='business')openSheet({currentTarget:$('auth-nav')});
+}
+
+aov.addEventListener('submit',async e=>{
+  e.preventDefault();
+  const btn=e.target.querySelector('[type="submit"]'),label=btn.textContent,m=aMode;
+  const val=id=>$(id)?$(id).value.trim():'';
+  const email=val('a-email').toLowerCase(),pw=$('a-pw')?$('a-pw').value:'',code=val('a-code').replace(/\s/g,'');
+  const miss=[];
+  if(m==='up'&&!val('a-name'))miss.push('your name');
+  if((m==='up'||m==='in'||m==='forgot')&&!NTU_EMAIL.test(email))miss.push('a valid email address');
+  if((m==='up'||m==='reset')&&pw.length<8)miss.push('a password of at least 8 characters');
+  if(m==='in'&&!pw)miss.push('your password');
+  if((m==='code'||m==='reset')&&!/^\d{6,8}$/.test(code))miss.push('the code from the email');
+  if(m==='up'&&!$('a-agree').checked)miss.push('your agreement to continue');
+  if(miss.length){aFail('Add '+miss.join(', ')+'.');return}
+  btn.disabled=true;btn.textContent='One moment…';
+  try{
+    if(m==='up'){
+      const {data,error}=await sb.auth.signUp({email,password:pw,options:{data:{name:val('a-name'),type:$('a-type').value}}});
+      if(error)throw error;
+      aEmail=email;
+      if(data.user&&data.user.identities&&!data.user.identities.length){aMode='in';drawAuth('That email already has an account. Log in instead.');return}
+      if(data.session){await finishAuth(true);return}
+      aMode='code';drawAuth();
+    }else if(m==='in'){
+      const {error}=await sb.auth.signInWithPassword({email,password:pw});
+      if(error&&/not confirmed/i.test(error.message)){
+        aEmail=email;await sb.auth.resend({type:'signup',email});
+        aMode='code';drawAuth('Your email isn’t confirmed yet, so we’ve sent you a new code.');return;
+      }
+      if(error)throw error;
+      await finishAuth(false);
+    }else if(m==='code'){
+      const {error}=await sb.auth.verifyOtp({email:aEmail,token:code,type:'email'});
+      if(error)throw error;
+      await finishAuth(true);
+    }else if(m==='forgot'){
+      const {error}=await sb.auth.resetPasswordForEmail(email);
+      if(error)throw error;
+      aEmail=email;aMode='reset';drawAuth();
+    }else{
+      const v=await sb.auth.verifyOtp({email:aEmail,token:code,type:'recovery'});
+      if(v.error)throw v.error;
+      const u=await sb.auth.updateUser({password:pw});
+      if(u.error)throw u.error;
+      await finishAuth(false,'Password updated. You’re logged in.');
+    }
+  }catch(err){aFail(friendly(err),btn,label)}
 });
-$('auth-nav').addEventListener('click',e=>{
-  const b=e.target.closest('[data-auth]');if(!b)return;
-  if(b.dataset.auth==='out'){USER=null;renderAuth();badge();say('Logged out');return}
-  openAuth(b.dataset.auth,null,b);
+aov.addEventListener('click',async e=>{
+  if(e.target===aov||e.target.closest('#a-x')){closeAuth();return}
+  const m=e.target.closest('[data-am]');
+  if(m){const em=$('a-email');if(em)aEmail=em.value.trim().toLowerCase();aMode=m.dataset.am;drawAuth();return}
+  if(e.target.closest('#a-resend')){
+    const r=aMode==='reset'?await sb.auth.resetPasswordForEmail(aEmail):await sb.auth.resend({type:'signup',email:aEmail});
+    if(r.error)aFail(friendly(r.error));
+    else{const i=$('a-info');i.textContent='New code sent. Check your inbox and spam folder.';i.hidden=false}
+  }
 });
 document.addEventListener('keydown',e=>{
   if(aov.hidden)return;
@@ -1154,6 +1223,108 @@ document.addEventListener('keydown',e=>{
   if(e.shiftKey&&(document.activeElement===a||document.activeElement.id==='a-title')){e.preventDefault();z.focus()}
   else if(!e.shiftKey&&document.activeElement===z){e.preventDefault();a.focus()}
 },true);
+
+/* ---- profile sheet: name, your listings, password, log out, delete account ---- */
+let pOpener=null;
+const pov=document.createElement('div');
+pov.className='overlay';pov.hidden=true;pov.style.zIndex=75;
+pov.innerHTML='<div class="sheet" id="psheet" role="dialog" aria-modal="true" aria-labelledby="p-title"></div>';
+document.body.appendChild(pov);
+
+function drawProfile(){
+  const u=USER;if(!u)return;
+  const since=new Date(u.created).toLocaleDateString('en-GB',{month:'long',year:'numeric'});
+  $('psheet').innerHTML=`<div class="sheet-head"><h2 id="p-title" tabindex="-1">Your profile</h2><button class="x" id="p-x" type="button" aria-label="Close">${XSVG}</button></div>
+    <div class="dprof">${avatar({name:u.name,cat:'Other'},72)}<div><b style="font-size:18px">${esc(u.name)}</b><p class="dsub">${esc(u.email)}</p><p class="hint" style="margin:4px 0 0">${u.type==='business'?'Runs a business or society':'Student'}, joined ${esc(since)}</p></div></div>
+    <form class="dsec" id="p-name-f" novalidate><h3>Your name</h3><div class="f"><label class="sr" for="p-name">Your name</label><input type="text" id="p-name" maxlength="40" value="${esc(u.name)}" autocomplete="name"></div><button class="btn sm" type="submit">Save name</button></form>
+    <div class="dsec"><h3>Your listings</h3><div id="p-list"><p class="hint">Loading your listings…</p></div></div>
+    <form class="dsec" id="p-pw-f" novalidate><h3>Change password</h3><div class="f"><label for="p-pw">New password <span class="hint">at least 8 characters</span></label><input type="password" id="p-pw" autocomplete="new-password"></div><button class="btn sm" type="submit">Update password</button></form>
+    <div class="dsec"><button class="btn ghost" type="button" id="p-out">Log out</button></div>
+    <div class="dsec rvlock"><h3>Delete account</h3><p style="margin:0 0 10px">This permanently deletes your account and every listing you’ve posted. It can’t be undone.</p><div class="f"><label for="p-del">Type DELETE to confirm</label><input type="text" id="p-del" autocomplete="off"></div><button class="btn pink sm" type="button" id="p-delbtn">Delete my account</button></div>
+    <p class="err" id="p-err" role="alert" hidden></p>`;
+  loadMyListings();
+}
+async function loadMyListings(){
+  const [b,s]=await Promise.all([
+    sb.from('businesses').select('id,name,what,created_at').eq('owner_id',USER.id).order('created_at',{ascending:false}),
+    sb.from('societies').select('id,name,what,created_at').eq('owner_id',USER.id).order('created_at',{ascending:false})
+  ]);
+  const rows=[...(b.data||[]).map(r=>({...r,t:'businesses',k:'Business'})),...(s.data||[]).map(r=>({...r,t:'societies',k:'Society'}))];
+  const el=$('p-list');if(!el)return;
+  el.innerHTML=rows.length
+    ?rows.map(r=>`<div class="mrow"><span><b>${esc(r.name)}</b><br><span class="hint">${r.k}, ${esc(r.what||'')}, posted ${new Date(r.created_at).toLocaleDateString('en-GB')}</span></span><i aria-hidden="true"></i><button class="link" type="button" data-del-t="${r.t}" data-del-id="${esc(r.id)}" data-del-n="${esc(r.name)}">Remove</button></div>`).join('')
+    :'<p class="hint">You haven’t posted anything yet.</p>';
+}
+function openProfile(btn){pOpener=btn;pov.hidden=false;document.body.style.overflow='hidden';drawProfile();$('p-title').focus()}
+function closeProfile(){pov.hidden=true;if(ov.hidden&&dov.hidden&&mov.hidden)document.body.style.overflow='';(pOpener&&pOpener.isConnected?pOpener:$('auth-nav').querySelector('button')).focus()}
+function pErr(m){const e=$('p-err');e.textContent=m;e.hidden=false;e.scrollIntoView({block:'nearest'})}
+
+pov.addEventListener('click',async e=>{
+  const t=e.target;
+  if(t===pov||t.closest('#p-x')){closeProfile();return}
+  if(t.closest('#p-out')){await sb.auth.signOut();closeProfile();say('Logged out');return}
+  const d=t.closest('[data-del-id]');
+  if(d){
+    if(!confirm(`Remove "${d.dataset.delN}" from the Board?`))return;
+    const {error}=await sb.from(d.dataset.delT).delete().eq('id',d.dataset.delId);
+    if(error){pErr(friendly(error));return}
+    await loadData();paintMarquee();render();loadMyListings();say('Listing removed');return;
+  }
+  const db=t.closest('#p-delbtn');
+  if(db){
+    if($('p-del').value.trim()!=='DELETE'){pErr('Type DELETE in the box to confirm.');return}
+    db.disabled=true;db.textContent='Deleting…';
+    const {error}=await sb.functions.invoke('delete-account',{method:'POST'});
+    if(error){db.disabled=false;db.textContent='Delete my account';pErr('Your account couldn’t be deleted. Try again.');return}
+    await sb.auth.signOut({scope:'local'});closeProfile();
+    await loadData();paintMarquee();render();say('Your account has been deleted');
+  }
+});
+pov.addEventListener('submit',async e=>{
+  e.preventDefault();
+  if(e.target.id==='p-name-f'){
+    const n=$('p-name').value.trim();if(!n){pErr('Your name can’t be empty.');return}
+    const {data,error}=await sb.auth.updateUser({data:{name:n}});
+    if(error){pErr(friendly(error));return}
+    USER=userFrom(data.user);renderAuth();drawProfile();$('p-title').focus();say('Name saved');
+  }else if(e.target.id==='p-pw-f'){
+    const pw=$('p-pw').value;if(pw.length<8){pErr('Use at least 8 characters.');return}
+    const {error}=await sb.auth.updateUser({password:pw});
+    if(error){pErr(friendly(error));return}
+    $('p-pw').value='';say('Password updated');
+  }
+});
+document.addEventListener('keydown',e=>{
+  if(pov.hidden||!aov.hidden)return;
+  if(e.key==='Escape'){e.stopImmediatePropagation();closeProfile();return}
+  if(e.key!=='Tab')return;
+  const f=[...pov.querySelectorAll('button,input,select,textarea')].filter(el=>!el.disabled&&el.offsetParent!==null);
+  if(!f.length)return;
+  const a=f[0],z=f[f.length-1];
+  if(e.shiftKey&&(document.activeElement===a||document.activeElement.id==='p-title')){e.preventDefault();z.focus()}
+  else if(!e.shiftKey&&document.activeElement===z){e.preventDefault();a.focus()}
+},true);
+
+/* ---- nav buttons ---- */
+$('auth-nav').addEventListener('click',e=>{
+  const b=e.target.closest('[data-auth]');if(!b)return;
+  if(b.dataset.auth==='profile'){openProfile(b);return}
+  openAuth(b.dataset.auth,null,b);
+});
+
+/* ---- you must be logged in to list a business or society ---- */
+document.querySelectorAll('[data-open-register]').forEach(b=>b.addEventListener('click',e=>{
+  if(USER)return;
+  e.stopImmediatePropagation();
+  openAuth('up',()=>openSheet({currentTarget:b}),b);
+},true));
+
+/* ---- keep the page in sync with the session (also restores login on reload) ---- */
+sb.auth.onAuthStateChange((ev,session)=>{
+  USER=userFrom(session&&session.user);
+  renderAuth();badge();
+  if(!USER&&!pov.hidden)closeProfile();
+});
 renderAuth();badge();
 
 /* ---------- settings: light / dark / auto theme ---------- */
