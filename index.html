@@ -461,7 +461,7 @@ textarea{resize:vertical;min-height:84px}
   <div class="wrap">
     <div class="notice"><span class="pin" aria-hidden="true"></span><div><strong>Business and society listings are real,</strong> submitted by NTU students. Messaging is a demo feature for now and isn't saved anywhere.</div></div>
     <small>The Board is a listings platform only. We don't vet, endorse, or take responsibility for the quality of anyone's product or service.</small>
-    <small>Not an official NTU or NTSU service.</small>
+    <small>Not an official NTU or NTSU service. <a href="/rules.html">Community rules</a></small>
     <div class="big" aria-hidden="true">the Board</div>
   </div>
 </footer>
@@ -793,7 +793,7 @@ function draw(){
     title.textContent='Here’s how it’ll look';
     const item={name:st.name,cat:st.cat,desc:st.desc,meta:st.meta.split(',').map(s=>s.trim()).filter(Boolean),contact:st.contact,mine:true,sub:st.sub,avatar:st.avatar,reviews:[],policy:st.policy.trim(),menu:parseMenu(st.menu),photos:st.photos.slice(),id:'u'+Date.now()};
     stepEl.innerHTML=`<div class="preview-label">Preview</div><div style="pointer-events:none">${cardHTML(item,st.kind)}</div>
-      <label class="check" for="r-agree"><input type="checkbox" id="r-agree" ${st.agree?'checked':''}>I confirm these are real contact details and I understand the Board is a listings platform only. It doesn’t vet or endorse anyone’s product or service.</label>
+      <label class="check" for="r-agree"><input type="checkbox" id="r-agree" ${st.agree?'checked':''}>I confirm these are real contact details, I agree to the <a href="/rules.html" target="_blank">community rules</a>, and I understand the Board is a listings platform only. It doesn’t vet or endorse anyone’s product or service.</label>
       <p class="err" id="err2" role="alert" hidden>Tick the box to post your listing.</p>
       <div class="row-btns"><button class="btn ghost" type="button" id="back2">Edit</button><button class="btn pink" type="button" id="post">Post to the Board</button></div>`;
     $('back2').addEventListener('click',()=>{st.step=1;draw()});
@@ -1165,7 +1165,7 @@ function drawAuth(info){
       ${field('a-email','Email','text',`inputmode="email" autocomplete="email" placeholder="you@example.com" value="${esc(aEmail)}"`)}
       ${field('a-pw','Password'+(up?' <span class="hint">at least 8 characters</span>':''),'password',`autocomplete="${up?'new-password':'current-password'}"`)}
       ${up?`<div class="f"><label for="a-type">I'm joining as</label><select id="a-type"><option value="student">A student looking for services</option><option value="business">A student running a business or society</option></select></div>
-      <label class="check" for="a-agree"><input type="checkbox" id="a-agree">I understand the Board is a listings platform only and is not an official NTU or NTSU service.</label>`
+      <label class="check" for="a-agree"><input type="checkbox" id="a-agree">I agree to the <a href="/rules.html" target="_blank">community rules</a> and understand the Board is a listings platform only, not an official NTU or NTSU service.</label>`
       :`<button class="link" type="button" data-am="forgot">Forgot your password?</button>`}`;
   }else if(m==='code'){
     body=`<p>We sent a code to <b>${esc(aEmail)}</b>. Type it in to confirm this is your email.</p>${codeField()}<button class="link" type="button" id="a-resend">Send a new code</button>`;
