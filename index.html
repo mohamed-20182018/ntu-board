@@ -372,6 +372,14 @@ textarea{resize:vertical;min-height:84px}
 .rk .rt{display:grid;min-width:0;flex:1}
 .rk .rt b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rk .rt small{color:var(--muted);font-size:13px}
+.link.rep{font-size:13px;color:var(--muted);font-weight:500;padding:4px 0;align-self:flex-start}
+.adm-sec{margin-top:20px}
+.adm-sec h3{font-size:16px;margin:0 0 10px}
+.adm{border:2px solid var(--line);border-radius:14px;background:var(--surface);padding:12px 14px;margin-bottom:10px;display:grid;gap:6px}
+.adm p{margin:0;font-size:14px;overflow-wrap:anywhere}
+.adm .why{font-family:var(--mono);font-size:12px;color:var(--pink)}
+.adm .acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+.adminbtn{color:var(--pink)}
 </style>
 </head>
 <body>
@@ -512,10 +520,10 @@ const SUB_TO_CAT={};
 Object.entries(SUBS).forEach(([c,ss])=>ss.forEach(s=>SUB_TO_CAT[s]=c));
 function bizFromRow(row){
   const cat=SUB_TO_CAT[row.what]||'Other';
-  return {id:row.id,name:row.name,cat,sub:row.what,desc:row.description||'',meta:[row.location,row.price].filter(Boolean),contact:row.contact||'',menu:row.price?[{g:null,items:[[row.what||'Service',row.price]]}]:[],policy:null,reviews:[],sections:[]};
+  return {id:row.id,name:row.name,cat,sub:row.what,desc:row.description||'',meta:[row.location,row.price].filter(Boolean),contact:row.contact||'',menu:row.price?[{g:null,items:[[row.what||'Service',row.price]]}]:[],policy:null,reviews:[],sections:[],status:row.status||'live',owner:row.owner_id};
 }
 function socFromRow(row){
-  return {id:row.id,name:row.name,cat:row.what||'Other',desc:row.description||'',meta:(row.meet||'').split(',').map(s=>s.trim()).filter(Boolean),contact:row.contact||''};
+  return {id:row.id,name:row.name,cat:row.what||'Other',desc:row.description||'',meta:(row.meet||'').split(',').map(s=>s.trim()).filter(Boolean),contact:row.contact||'',status:row.status||'live',owner:row.owner_id};
 }
 const DATA={services:[],socs:[],official:[]};
 async function loadData(){
@@ -523,11 +531,12 @@ async function loadData(){
     sb.from('businesses').select('*').order('created_at',{ascending:false}),
     sb.from('societies').select('*').order('created_at',{ascending:false})
   ]);
-  DATA.services=(b.data||[]).map(bizFromRow);
-  const r=await sb.from('reviews').select('*').order('created_at',{ascending:false});
   const me=(await sb.auth.getUser()).data.user;
-  (r.data||[]).forEach(x=>{const it=DATA.services.find(i=>String(i.id)===String(x.business_id));if(it)it.reviews.push({id:x.id,s:x.stars,t:x.body,w:x.reviewer_name||'Student',x:new Date(x.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}),mine:!!me&&x.user_id===me.id,uid:x.user_id})});
-  DATA.socs=(s.data||[]).map(socFromRow);
+  const shown=x=>x.status==='live'||(!!me&&(x.owner_id===me.id||x.user_id===me.id));
+  DATA.services=(b.data||[]).filter(shown).map(bizFromRow);
+  const r=await sb.from('reviews').select('*').order('created_at',{ascending:false});
+  (r.data||[]).filter(shown).forEach(x=>{const it=DATA.services.find(i=>String(i.id)===String(x.business_id));if(it)it.reviews.push({id:x.id,s:x.stars,t:x.body,w:x.reviewer_name||'Student',x:new Date(x.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}),mine:!!me&&x.user_id===me.id,uid:x.user_id,status:x.status})});
+  DATA.socs=(s.data||[]).filter(shown).map(socFromRow);
   DATA.official=[];
 }
 /* ---------- OLD example data, retained only for reference, unused ----------
@@ -568,7 +577,7 @@ const _UNUSED_DATA={
 };
 ---------------------------------------------------------------------------- */
 let sub=null;
-const avg=it=>it.reviews&&it.reviews.length?it.reviews.reduce((a,r)=>a+r.s,0)/it.reviews.length:0;
+const avg=it=>{const l=(it.reviews||[]).filter(r=>r.status!=='pending');return l.length?l.reduce((a,r)=>a+r.s,0)/l.length:0};
 const stars=(n,sz=14)=>{const r=Math.round(n);return `<span class="stars" role="img" aria-label="${n.toFixed(1)} out of 5">${[1,2,3,4,5].map(i=>`<svg width="${sz}" height="${sz}" viewBox="0 0 24 24" fill="${i<=r?'currentColor':'none'}" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="${ICONS.star}"/></svg>`).join('')}</span>`};
 const fromPrice=it=>{const v=[].concat(...(it.menu||[]).filter(g=>g.g!=='Add-ons').map(g=>g.items.map(i=>{const m=String(i[1]).match(/\d+(\.\d+)?/);return m?parseFloat(m[0]):NaN}))).filter(x=>!isNaN(x));return v.length?'From £'+Math.min(...v):''};
 const initials=n=>n.split(/\s+/).filter(w=>/^[A-Za-z0-9]/.test(w)).slice(0,2).map(w=>w[0].toUpperCase()).join('');
@@ -622,7 +631,7 @@ function headFor(it,kind){
 }
 function cardHTML(it,kind){
   const h=headFor(it,kind),ph=it.photos||[];
-  const exBadge=it.mine?`<span class="ex">Your preview</span>`:'';
+  const exBadge=it.mine?`<span class="ex">Your preview</span>`:it.status==='pending'?`<span class="ex">Waiting for approval</span>`:'';
   const head=ph.length
     ?`<div class="card-head has-photo"><button class="shot" type="button" data-lb="${it.id||''}" aria-label="View ${ph.length} photo${ph.length>1?'s':''} of ${esc(it.name)}"><img src="${ph[0]}" alt="" decoding="async" loading="lazy"></button>${ph.length>1?`<span class="pc">1/${ph.length}</span>`:''}${exBadge}</div>`
     :`<div class="card-head" style="background:${h.bg}">${svg(h.icon,44,1.7)}${exBadge}</div>`;
@@ -635,7 +644,7 @@ function cardHTML(it,kind){
       <p>${esc(it.desc)}</p>
       <div class="meta">${(kind==='services'&&fromPrice(it)?[fromPrice(it)]:[]).concat(it.meta).map(m=>`<span>${esc(m)}</span>`).join('')}</div>
       ${kind==='services'?`<button class="btn dark sm" type="button" data-detail="${esc(it.id||'')}">Menu and reviews</button>`:''}
-      <div class="contact"><code>${esc(it.contact)}</code>${kind==='official'?'':`<button class="copy" type="button" data-copy="${esc(it.contact)}">Copy</button>`}</div>
+      <div class="contact"><code>${esc(it.contact)}</code>${kind==='official'?'':`<button class="copy" type="button" data-copy="${esc(it.contact)}">Copy</button>`}</div>${kind==='socs'&&!it.mine?`<button class="link rep" type="button" data-report="society" data-rid="${esc(it.id)}">Report</button>`:''}
     </div>
   </article>`;
 }
@@ -800,17 +809,19 @@ function draw(){
         table='societies';
         row={name:st.name,what:st.cat,meet:item.meta.join(', '),description:st.desc,contact:st.contact};
       }
-      const {error}=await sb.from(table).insert(row);
-      if(error){btn.disabled=false;btn.textContent='Post to the Board';$('err2').textContent='Something went wrong posting this. Try again.';$('err2').hidden=false;return}
+      const res=await submitPost(table==='businesses'?'business':'society',row);
+      if(res.error){btn.disabled=false;btn.textContent='Post to the Board';$('err2').textContent=res.error;$('err2').hidden=false;return}
+      lastStatus=res.status;
       await loadData();
       tab=st.kind;cat=null;q.value='';render();
       st.step=3;draw();
     });
   }else{
-    title.textContent='You’re on the Board';
+    const held=lastStatus==='pending';
+    title.textContent=held?'Sent for a quick check':'You’re on the Board';
     stepEl.innerHTML=`<div class="done"><div class="big-pin" aria-hidden="true"></div>
-      <p style="margin:0 0 6px;font-weight:700;font-size:18px">${esc(st.name)} is pinned.</p>
-      <p style="margin:0;color:var(--muted)">Your listing is now live and shown to every NTU student browsing the Board.</p>
+      <p style="margin:0 0 6px;font-weight:700;font-size:18px">${esc(st.name)} ${held?'is waiting for approval.':'is pinned.'}</p>
+      <p style="margin:0;color:var(--muted)">${held?'Something in your listing needs a quick look from our team. Only you can see it until it’s approved.':'Your listing is now live and shown to every NTU student browsing the Board.'}</p>
       <div class="row-btns" style="justify-content:center"><button class="btn" type="button" id="see">See my listing</button></div></div>`;
     $('see').addEventListener('click',()=>{closeSheet();$('browse').scrollIntoView({behavior:'smooth'})});
   }
@@ -826,6 +837,13 @@ let dcur=null,dopen=null,revOpen=false;
 function menuHTML(it){
   return (it.menu||[]).map(g=>`${g.g?`<h4>${esc(g.g)}</h4>`:''}${g.items.map(i=>`<div class="mrow"><span>${esc(i[0])}</span><i aria-hidden="true"></i><b>${esc(i[1])}</b></div>`).join('')}`).join('');
 }
+/* ---------- posting goes through the moderation checker (Edge Function submit-post) ---------- */
+async function submitPost(kind,row){
+  const {data,error}=await sb.functions.invoke('submit-post',{body:{kind,row}});
+  if(error){let m='Something went wrong. Try again.';try{const j=await error.context.json();if(j&&j.error)m=j.error}catch(_){}return {error:m}}
+  return {status:data&&data.status};
+}
+let lastStatus='live';
 /* ---------- reviews (saved in Supabase) ---------- */
 let rvStars=0;
 const COMPLETED=new Set(); /* used only by the demo messages */
@@ -866,14 +884,14 @@ function drawDetail(){
     ${(it.photos||[]).length?`<div class="dphotos">${it.photos.map((p,i)=>`<button type="button" data-p="${i}" aria-label="View photo ${i+1}"><img src="${p}" alt=""></button>`).join('')}</div>`:''}
     ${(it.menu||[]).some(g=>g.items.length)?`<div class="dsec"><h3>Menu and prices</h3>${menuHTML(it)}</div>`:''}
     ${hlList(it).length?`<div class="dsec"><h3>Highlights</h3><div class="hls" role="group" aria-label="Policies and fees. Opens full screen.">${hlList(it).map((h,i)=>`<button class="hlb" type="button" data-hl="${i}" aria-haspopup="dialog"><span class="ring"><span class="in" style="background:${h.c}">${svg(ICONS[h.i],26,2)}</span></span><span>${esc(h.t)}</span></button>`).join('')}</div></div>`:''}
-    <div class="dsec"><h3>Contact</h3><div class="contact" style="border:0;padding:0"><code>${esc(it.contact)}</code><button class="copy" type="button" data-copy="${esc(it.contact)}">Copy</button></div></div>
+    <div class="dsec"><h3>Contact</h3><div class="contact" style="border:0;padding:0"><code>${esc(it.contact)}</code><button class="copy" type="button" data-copy="${esc(it.contact)}">Copy</button></div><button class="link rep" type="button" data-report="business" data-rid="${esc(it.id)}">Report this listing</button></div>
     <div class="dsec acc"><button class="acc-h" type="button" id="rev-t" aria-expanded="${revOpen}" aria-controls="rev-p"><span class="acc-n">Reviews</span><span class="acc-s">${n?`${stars(avg(it),14)} ${avg(it).toFixed(1)} (${n})`:'No reviews yet'}</span><svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
       <div class="acc-p" id="rev-p" ${revOpen?'':'hidden'}>
         ${n?`<div class="bars" aria-label="Rating breakdown">${[5,4,3,2,1].map(k=>{const c=it.reviews.filter(r=>r.s===k).length;return `<div class="rbar"><span>${k}</span><i><b style="width:${Math.round(c/n*100)}%"></b></i><em>${c}</em></div>`}).join('')}</div>`:''}
-        ${n?it.reviews.map(r=>`<div class="rv">${stars(r.s)}<p>${esc(r.t)}</p><small>${esc(r.w)}${r.x?' · '+esc(r.x):''}${USER&&r.uid===USER.id?' · Your review':''}</small></div>`).join(''):'<p style="color:var(--muted);margin:10px 0 0">Be the first to leave a review.</p>'}
+        ${n?it.reviews.map(r=>`<div class="rv">${stars(r.s)}<p>${esc(r.t)}</p><small>${esc(r.w)}${r.x?' · '+esc(r.x):''}${USER&&r.uid===USER.id?(r.status==='pending'?' · Your review · Waiting for approval':' · Your review'):''}</small>${USER&&r.uid!==USER.id?`<button class="link rep" type="button" data-report="review" data-rid="${esc(r.id)}">Report</button>`:''}</div>`).join(''):'<p style="color:var(--muted);margin:10px 0 0">Be the first to leave a review.</p>'}
         ${reviewBox(it)}
       </div></div>`;
-  dbody.querySelectorAll('[data-star]').forEach(x=>x.addEventListener('click',()=>{rvStars=+x.dataset.star;revOpen=true;drawDetail();const t=$('rv-t');if(t)t.focus()}));
+  $('dbody').querySelectorAll('[data-star]').forEach(x=>x.addEventListener('click',()=>{rvStars=+x.dataset.star;revOpen=true;drawDetail();const t=$('rv-t');if(t)t.focus()}));
   const del=$('rv-del');
   if(del)del.addEventListener('click',async()=>{
     if(!confirm('Delete your review?'))return;
@@ -886,10 +904,10 @@ function drawDetail(){
     const t=($('rv-t')||{value:''}).value.trim(),er=$('rv-e');
     if(!rvStars||!t){er.textContent='Tell us why you picked '+rvStars+' star'+(rvStars>1?'s':'')+'.';er.hidden=false;return}
     const go=$('rv-go');go.disabled=true;go.textContent='Posting…';
-    const {error}=await sb.from('reviews').insert({business_id:dcur.id,stars:rvStars,body:t,reviewer_name:USER.name});
-    if(error){go.disabled=false;go.textContent='Post review';er.textContent=error.code==='23505'?'You have already reviewed this business.':'Something went wrong. Try again.';er.hidden=false;return}
+    const res=await submitPost('review',{business_id:dcur.id,stars:rvStars,body:t,reviewer_name:USER.name});
+    if(res.error){go.disabled=false;go.textContent='Post review';er.textContent=res.error;er.hidden=false;return}
     const id=dcur.id;rvStars=0;await loadData();dcur=DATA.services.find(x=>x.id===id)||dcur;
-    revOpen=true;render();paintMarquee();drawDetail();$('rev-t').focus();say('Review posted');
+    revOpen=true;render();paintMarquee();drawDetail();$('rev-t').focus();say(res.status==='pending'?'Thanks. Your review will show once our team has checked it':'Review posted');
   });
 }
 function openDetail(id,btn){
@@ -1125,6 +1143,7 @@ function renderAuth(){
   $('auth-nav').innerHTML=USER
     ?`<button class="navbtn me" type="button" data-auth="profile" aria-label="Your profile">${avatar({name:USER.name,cat:'Other'},28)}<span>Hi, ${esc(USER.name.split(' ')[0])}</span></button>`
     :`<button class="navbtn" type="button" data-auth="in">Log in</button><button class="btn" type="button" data-auth="up">Sign up</button>`;
+  if(typeof addAdminBtn==='function')addAdminBtn();
 }
 
 /* ---- auth sheet: sign up, log in, email code, forgot password ---- */
@@ -1346,10 +1365,68 @@ document.querySelectorAll('[data-open-register]').forEach(b=>b.addEventListener(
 /* ---- keep the page in sync with the session (also restores login on reload) ---- */
 sb.auth.onAuthStateChange((ev,session)=>{
   USER=userFrom(session&&session.user);
-  renderAuth();badge();
+  renderAuth();badge();setTimeout(checkAdmin,0);
   if(!USER&&!pov.hidden)closeProfile();
 });
 renderAuth();badge();
+
+/* ---------- reporting ---------- */
+async function report(kind,id){
+  if(!USER){openAuth('in',null,document.activeElement);return}
+  const reason=prompt('What is wrong with this '+(kind==='review'?'review':'listing')+'?');
+  if(reason===null)return;
+  if(!reason.trim()){say('Add a reason to report');return}
+  const {error}=await sb.from('reports').insert({kind,target_id:String(id),reason:reason.trim().slice(0,300)});
+  if(error&&error.code==='23505'){say('You have already reported this');return}
+  say(error?'Could not send report. Try again.':'Thanks, our team will take a look');
+}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-report]');if(b){e.preventDefault();report(b.dataset.report,b.dataset.rid)}});
+
+/* ---------- admin panel (only for emails in the admins table) ---------- */
+var IS_ADMIN=false,admOpener=null;
+async function checkAdmin(){
+  IS_ADMIN=false;
+  if(USER){const {data}=await sb.rpc('is_admin');IS_ADMIN=data===true}
+  addAdminBtn();
+}
+function addAdminBtn(){
+  const old=$('open-admin');if(old)old.remove();
+  if(IS_ADMIN&&USER){const b=document.createElement('button');b.className='navbtn adminbtn';b.type='button';b.id='open-admin';b.textContent='Admin';b.addEventListener('click',()=>openAdmin(b));$('auth-nav').prepend(b)}
+}
+const admov=document.createElement('div');
+admov.className='overlay';admov.hidden=true;admov.style.zIndex=65;
+admov.innerHTML='<div class="sheet dsheet" id="admsheet" role="dialog" aria-modal="true" aria-labelledby="adm-title"></div>';
+document.body.appendChild(admov);
+async function drawAdmin(){
+  const sh=$('admsheet');
+  sh.innerHTML='<div class="sheet-head"><h2 id="adm-title" tabindex="-1">Admin</h2><button class="x" id="adm-x" type="button" aria-label="Close">&times;</button></div><p class="hint">Loading…</p>';
+  const [b,so,r,rep]=await Promise.all([
+    sb.from('businesses').select('*').eq('status','pending'),
+    sb.from('societies').select('*').eq('status','pending'),
+    sb.from('reviews').select('*').eq('status','pending'),
+    sb.from('reports').select('*').order('created_at',{ascending:false})
+  ]);
+  const item=(kind,x,title,text)=>`<div class="adm"><b>${esc(title)}</b><p>${esc(text)}</p>${x.flag_reason?`<span class="why">${esc(x.flag_reason)}</span>`:''}<div class="acts"><button class="btn sm" type="button" data-approve="${kind}" data-id="${esc(x.id)}">Approve</button><button class="btn sm ghost" type="button" data-remove="${kind}" data-id="${esc(x.id)}">Remove</button></div></div>`;
+  const pend=[].concat(
+    (b.data||[]).map(x=>item('businesses',x,'Business: '+x.name,x.description)),
+    (so.data||[]).map(x=>item('societies',x,'Society: '+x.name,x.description)),
+    (r.data||[]).map(x=>item('reviews',x,'Review ('+x.stars+' stars) by '+(x.reviewer_name||'Student'),x.body)));
+  const tbl={business:'businesses',society:'societies',review:'reviews'};
+  const reps=(rep.data||[]).map(x=>`<div class="adm"><b>Report on a ${esc(x.kind)}</b><p>${esc(x.reason)}</p><span class="why">id ${esc(x.target_id)}</span><div class="acts"><button class="btn sm ghost" type="button" data-remove="${tbl[x.kind]}" data-id="${esc(x.target_id)}" data-rep="${esc(x.id)}">Remove the ${esc(x.kind)}</button><button class="btn sm" type="button" data-dismiss="${esc(x.id)}">Dismiss report</button></div></div>`);
+  sh.innerHTML=`<div class="sheet-head"><h2 id="adm-title" tabindex="-1">Admin</h2><button class="x" id="adm-x" type="button" aria-label="Close">&times;</button></div>
+    <div class="adm-sec"><h3>Waiting for approval (${pend.length})</h3>${pend.join('')||'<p class="hint">Nothing waiting.</p>'}</div>
+    <div class="adm-sec"><h3>Reports (${reps.length})</h3>${reps.join('')||'<p class="hint">No reports.</p>'}</div>`;
+}
+function openAdmin(btn){admOpener=btn;admov.hidden=false;document.body.style.overflow='hidden';drawAdmin().then(()=>$('adm-title').focus())}
+async function closeAdmin(){admov.hidden=true;document.body.style.overflow='';await loadData();paintMarquee();render();if(admOpener&&admOpener.isConnected)admOpener.focus()}
+admov.addEventListener('click',async e=>{
+  if(e.target===admov||e.target.closest('#adm-x')){closeAdmin();return}
+  const a=e.target.closest('[data-approve]'),r=e.target.closest('[data-remove]'),d=e.target.closest('[data-dismiss]');
+  if(a){const {error}=await sb.from(a.dataset.approve).update({status:'live',flag_reason:null}).eq('id',a.dataset.id);say(error?'Could not approve':'Approved');drawAdmin()}
+  else if(r){if(!confirm('Remove this for good?'))return;const {error}=await sb.from(r.dataset.remove).delete().eq('id',r.dataset.id);if(!error&&r.dataset.rep)await sb.from('reports').delete().eq('id',r.dataset.rep);say(error?'Could not remove':'Removed');drawAdmin()}
+  else if(d){await sb.from('reports').delete().eq('id',d.dataset.dismiss);say('Report dismissed');drawAdmin()}
+});
+document.addEventListener('keydown',e=>{if(!admov.hidden&&e.key==='Escape'){e.stopImmediatePropagation();closeAdmin()}},true);
 
 /* ---------- rankings: businesses ordered by their reviews ---------- */
 let rOpener=null;
