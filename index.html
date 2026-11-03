@@ -360,6 +360,18 @@ textarea{resize:vertical;min-height:84px}
   .mlist{border-right:0}
 }
 @media (prefers-reduced-motion:reduce){.chev{transition:none}}
+.rvpick{display:flex;gap:6px;color:#E8A800}
+.rvstar{background:none;border:0;padding:4px;border-radius:10px;color:inherit;cursor:pointer;transition:transform .1s}
+.rvstar:hover{transform:scale(1.12)}
+.rvstar:focus-visible{outline:3px solid var(--pink);outline-offset:2px}
+.rklist{display:grid;gap:10px;margin-top:16px}
+.rk{display:flex;align-items:center;gap:12px;text-align:left;border:2px solid var(--line);border-radius:16px;background:var(--surface);color:var(--ink);padding:10px 14px;box-shadow:3px 3px 0 var(--shadow);width:100%}
+.rk:hover{transform:translate(-2px,-2px);box-shadow:5px 5px 0 var(--shadow)}
+.rk .no{font-family:var(--display);font-weight:900;font-size:22px;min-width:34px;text-align:center}
+.rk.top1 .no{color:#E8A800}.rk.top2 .no{color:#9AA3B5}.rk.top3 .no{color:#C27A3A}
+.rk .rt{display:grid;min-width:0;flex:1}
+.rk .rt b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rk .rt small{color:var(--muted);font-size:13px}
 </style>
 </head>
 <body>
@@ -370,6 +382,7 @@ textarea{resize:vertical;min-height:84px}
       <a class="logo" href="#top"><span class="pin" aria-hidden="true"></span>the Board</a>
       <nav class="nav" aria-label="Main">
         <a class="l" href="#browse">Browse</a>
+        <button class="l navbtn" type="button" id="open-rank">Rankings</button>
         <a class="l" href="#how">How it works</a>
         <button class="l navbtn" type="button" id="open-msg">Messages<span class="mbadge" id="msg-badge" hidden></span></button>
         <span class="authnav" id="auth-nav"></span>
@@ -438,7 +451,7 @@ textarea{resize:vertical;min-height:84px}
 
 <footer>
   <div class="wrap">
-    <div class="notice"><span class="pin" aria-hidden="true"></span><div><strong>Business and society listings are real,</strong> submitted by NTU students. Messaging and reviews are demo features for now and aren't saved anywhere.</div></div>
+    <div class="notice"><span class="pin" aria-hidden="true"></span><div><strong>Business and society listings are real,</strong> submitted by NTU students. Messaging is a demo feature for now and isn't saved anywhere.</div></div>
     <small>The Board is a listings platform only. We don't vet, endorse, or take responsibility for the quality of anyone's product or service.</small>
     <small>Not an official NTU or NTSU service.</small>
     <div class="big" aria-hidden="true">the Board</div>
@@ -511,6 +524,9 @@ async function loadData(){
     sb.from('societies').select('*').order('created_at',{ascending:false})
   ]);
   DATA.services=(b.data||[]).map(bizFromRow);
+  const r=await sb.from('reviews').select('*').order('created_at',{ascending:false});
+  const me=(await sb.auth.getUser()).data.user;
+  (r.data||[]).forEach(x=>{const it=DATA.services.find(i=>String(i.id)===String(x.business_id));if(it)it.reviews.push({id:x.id,s:x.stars,t:x.body,w:x.reviewer_name||'Student',x:new Date(x.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}),mine:!!me&&x.user_id===me.id,uid:x.user_id})});
   DATA.socs=(s.data||[]).map(socFromRow);
   DATA.official=[];
 }
@@ -570,7 +586,7 @@ function say(m){const t=$('toast');t.textContent=m;t.hidden=false;clearTimeout(t
 
 /* ---------- marquee ---------- */
 function paintMarquee(){
-  const TOP=DATA.services.slice(0,8).map(x=>x.name);
+  const TOP=ranked().slice(0,8).map(x=>x.name);
   $('track').innerHTML=TOP.length?TOP.concat(TOP,TOP,TOP).map(w=>`<span>${esc(w)}</span>`).join(''):'';
 }
 
@@ -810,20 +826,21 @@ let dcur=null,dopen=null,revOpen=false;
 function menuHTML(it){
   return (it.menu||[]).map(g=>`${g.g?`<h4>${esc(g.g)}</h4>`:''}${g.items.map(i=>`<div class="mrow"><span>${esc(i[0])}</span><i aria-hidden="true"></i><b>${esc(i[1])}</b></div>`).join('')}`).join('');
 }
-/* Demo stand-in. The real site must check this on the server: a booking record marked completed for this student and this business, and one review per student per business. */
-const COMPLETED=new Set();
+/* ---------- reviews (saved in Supabase) ---------- */
+let rvStars=0;
+const COMPLETED=new Set(); /* used only by the demo messages */
+const ranked=()=>DATA.services.slice().sort((x,y)=>{const n=(y.reviews.length?1:0)-(x.reviews.length?1:0);if(n)return n;return avg(y)-avg(x)||y.reviews.length-x.reviews.length||x.name.localeCompare(y.name)});
 function reviewBox(it){
-  if((it.reviews||[]).some(r=>r.mine))return `<div class="rvlock" role="status"><b>Thanks, you've reviewed this business.</b> Each student can leave one review per business.</div>`;
-  if(!USER)return `<div class="rvlock"><b>Log in to leave a review.</b> Reviews are for signed-in students who've had an appointment with this business.<br><button class="btn pink sm" type="button" data-auth="in" style="margin-top:10px">Log in or sign up</button></div>`;
-  if(!COMPLETED.has(it.id))return `<div class="rvlock"><b>Reviews are for students who've had an appointment.</b> Once your appointment with ${esc(it.name)} is marked complete, you can leave one review.<br><button class="link" type="button" id="demo-done">Demo only: pretend I've had an appointment</button></div>`;
-  return `      <form class="rvform" id="rvf" novalidate>
-        <div class="f"><label for="rv-n">Your name</label><input type="text" id="rv-n" autocomplete="given-name" maxlength="30" value="${esc(USER?USER.name:'')}"></div>
-        <div class="f"><label for="rv-s">Rating</label><select id="rv-s"><option value="">Choose</option>${[5,4,3,2,1].map(x=>`<option value="${x}">${x} out of 5</option>`).join('')}</select></div>
-        <div class="f"><label for="rv-t">Your review</label><textarea id="rv-t" maxlength="300"></textarea></div>
-        <p class="err" id="rv-e" role="alert" hidden></p>
-        <button class="btn pink" type="submit">Post review</button>
-        <p class="hint" style="margin:10px 0 0">In this demo reviews appear on your screen only.</p>
-      </form>`;
+  const mine=USER&&(it.reviews||[]).find(r=>r.mine&&r.uid===USER.id);
+  if(mine)return `<div class="rvlock" role="status"><b>Thanks, you've reviewed this business.</b> Each person can leave one review per business.<br><button class="link" type="button" id="rv-del" data-rid="${esc(mine.id)}">Delete my review</button></div>`;
+  if(!USER)return `<div class="rvlock"><b>Log in to leave a review.</b> Any signed-in user can review a business.<br><button class="btn pink sm" type="button" data-auth="in" style="margin-top:10px">Log in or sign up</button></div>`;
+  return `<form class="rvform" id="rvf" novalidate>
+      <p style="margin:0 0 8px;font-weight:700">${rvStars?`You picked ${rvStars} star${rvStars>1?'s':''}`:'How many stars would you give?'}</p>
+      <div class="rvpick" role="radiogroup" aria-label="Star rating">${[1,2,3,4,5].map(i=>`<button type="button" class="rvstar" role="radio" aria-checked="${i===rvStars}" aria-label="${i} star${i>1?'s':''}" data-star="${i}"><svg width="34" height="34" viewBox="0 0 24 24" fill="${i<=rvStars?'currentColor':'none'}" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="${ICONS.star}"/></svg></button>`).join('')}</div>
+      ${rvStars?`<div class="f" style="margin-top:14px"><label for="rv-t">Why ${rvStars} star${rvStars>1?'s':''}?</label><textarea id="rv-t" maxlength="500" placeholder="Tell other students what it was like"></textarea></div>
+      <p class="err" id="rv-e" role="alert" hidden></p>
+      <button class="btn pink" type="submit" id="rv-go">Post review</button>`:''}
+    </form>`;
 }
 const HLM={'Late fees':{i:'pound',c:'#FFD84D'},'Late policy':{i:'bell',c:'#FF6A9C'},'Hair policies':{i:'scissors',c:'#B9A8FF'}};
 function hlList(it){
@@ -853,24 +870,31 @@ function drawDetail(){
     <div class="dsec acc"><button class="acc-h" type="button" id="rev-t" aria-expanded="${revOpen}" aria-controls="rev-p"><span class="acc-n">Reviews</span><span class="acc-s">${n?`${stars(avg(it),14)} ${avg(it).toFixed(1)} (${n})`:'No reviews yet'}</span><svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
       <div class="acc-p" id="rev-p" ${revOpen?'':'hidden'}>
         ${n?`<div class="bars" aria-label="Rating breakdown">${[5,4,3,2,1].map(k=>{const c=it.reviews.filter(r=>r.s===k).length;return `<div class="rbar"><span>${k}</span><i><b style="width:${Math.round(c/n*100)}%"></b></i><em>${c}</em></div>`}).join('')}</div>`:''}
-        ${n?it.reviews.map(r=>`<div class="rv">${stars(r.s)}<p>${esc(r.t)}</p><small>${esc(r.w)}${r.x?' · '+esc(r.x):''}${r.mine?' · Verified appointment · Your review':' · Example'}</small></div>`).join(''):'<p style="color:var(--muted);margin:10px 0 0">Be the first to leave a review.</p>'}
+        ${n?it.reviews.map(r=>`<div class="rv">${stars(r.s)}<p>${esc(r.t)}</p><small>${esc(r.w)}${r.x?' · '+esc(r.x):''}${USER&&r.uid===USER.id?' · Your review':''}</small></div>`).join(''):'<p style="color:var(--muted);margin:10px 0 0">Be the first to leave a review.</p>'}
         ${reviewBox(it)}
       </div></div>`;
-  const dd=$('demo-done');
-  if(dd)dd.addEventListener('click',()=>{COMPLETED.add(dcur.id);revOpen=true;drawDetail();$('rv-n').focus();$('rv-n').scrollIntoView({block:'center'})});
-  if($('rvf'))$('rvf').addEventListener('submit',e=>{
+  dbody.querySelectorAll('[data-star]').forEach(x=>x.addEventListener('click',()=>{rvStars=+x.dataset.star;revOpen=true;drawDetail();const t=$('rv-t');if(t)t.focus()}));
+  const del=$('rv-del');
+  if(del)del.addEventListener('click',async()=>{
+    if(!confirm('Delete your review?'))return;
+    const {error}=await sb.from('reviews').delete().eq('id',del.dataset.rid);
+    if(error){say('Could not delete. Try again.');return}
+    const id=dcur.id;await loadData();dcur=DATA.services.find(x=>x.id===id)||dcur;revOpen=true;render();paintMarquee();drawDetail();say('Review deleted');
+  });
+  if($('rvf'))$('rvf').addEventListener('submit',async e=>{
     e.preventDefault();
-    const w=$('rv-n').value.trim(),sc=+$('rv-s').value,t=$('rv-t').value.trim(),er=$('rv-e');
-    const miss=[!w&&'your name',!sc&&'a rating',!t&&'a few words'].filter(Boolean);
-    if(miss.length){er.textContent='Add '+miss.join(', ')+' to post.';er.hidden=false;return}
-    if((dcur.reviews||[]).some(r=>r.mine)||!COMPLETED.has(dcur.id))return;
-    (dcur.reviews=dcur.reviews||[]).unshift({s:sc,t,w,x:'Just now',mine:true});
-    revOpen=true;render();drawDetail();$('rev-t').focus();say('Review posted');
+    const t=($('rv-t')||{value:''}).value.trim(),er=$('rv-e');
+    if(!rvStars||!t){er.textContent='Tell us why you picked '+rvStars+' star'+(rvStars>1?'s':'')+'.';er.hidden=false;return}
+    const go=$('rv-go');go.disabled=true;go.textContent='Posting…';
+    const {error}=await sb.from('reviews').insert({business_id:dcur.id,stars:rvStars,body:t,reviewer_name:USER.name});
+    if(error){go.disabled=false;go.textContent='Post review';er.textContent=error.code==='23505'?'You have already reviewed this business.':'Something went wrong. Try again.';er.hidden=false;return}
+    const id=dcur.id;rvStars=0;await loadData();dcur=DATA.services.find(x=>x.id===id)||dcur;
+    revOpen=true;render();paintMarquee();drawDetail();$('rev-t').focus();say('Review posted');
   });
 }
 function openDetail(id,btn){
-  const it=DATA.services.find(x=>x.id===id);if(!it)return;
-  dcur=it;dopen=id;revOpen=false;drawDetail();dov.hidden=false;document.body.style.overflow='hidden';$('dtitle').focus();
+  const it=DATA.services.find(x=>String(x.id)===String(id));if(!it)return;
+  dcur=it;dopen=id;revOpen=false;rvStars=0;drawDetail();dov.hidden=false;document.body.style.overflow='hidden';$('dtitle').focus();
   dov.querySelector('.sheet').scrollTop=0;
 }
 function closeDetail(){
@@ -1326,6 +1350,27 @@ sb.auth.onAuthStateChange((ev,session)=>{
   if(!USER&&!pov.hidden)closeProfile();
 });
 renderAuth();badge();
+
+/* ---------- rankings: businesses ordered by their reviews ---------- */
+let rOpener=null;
+const rov=document.createElement('div');
+rov.className='overlay';rov.hidden=true;rov.style.zIndex=55;
+rov.innerHTML='<div class="sheet" id="rsheet" role="dialog" aria-modal="true" aria-labelledby="r-title"></div>';
+document.body.appendChild(rov);
+function drawRank(){
+  const list=ranked();
+  $('rsheet').innerHTML=`<div class="sheet-head"><h2 id="r-title" tabindex="-1">Top rated businesses</h2><button class="x" id="r-x" type="button" aria-label="Close"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <p class="hint" style="margin:8px 0 0">Ranked by average star rating. Ties go to the business with more reviews.</p>
+    <div class="rklist">${list.length?list.map((it,i)=>{const n=it.reviews.length;return `<button class="rk ${i<3&&n?'top'+(i+1):''}" type="button" data-rank="${esc(it.id)}"><span class="no">${n?i+1:'–'}</span>${avatar(it,40)}<span class="rt"><b>${esc(it.name)}</b><small>${esc(it.sub||it.cat)}</small></span><span class="rate">${n?`${stars(avg(it))} ${avg(it).toFixed(1)} (${n})`:'No reviews yet'}</span></button>`}).join(''):'<p class="mempty">No businesses yet.</p>'}</div>`;
+}
+function openRank(btn){rOpener=btn||document.activeElement;rov.hidden=false;document.body.style.overflow='hidden';drawRank();$('r-title').focus()}
+function closeRank(){rov.hidden=true;document.body.style.overflow='';if(rOpener&&rOpener.isConnected)rOpener.focus()}
+$('open-rank').addEventListener('click',e=>openRank(e.currentTarget));
+rov.addEventListener('click',e=>{
+  if(e.target===rov||e.target.closest('#r-x')){closeRank();return}
+  const b=e.target.closest('[data-rank]');if(b){rov.hidden=true;openDetail(b.dataset.rank,b)}
+});
+document.addEventListener('keydown',e=>{if(!rov.hidden&&e.key==='Escape'){e.stopImmediatePropagation();closeRank()}},true);
 
 /* ---------- settings: light / dark / auto theme ---------- */
 const THEME_KEY='board-theme';
