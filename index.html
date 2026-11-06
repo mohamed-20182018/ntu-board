@@ -2,16 +2,22 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<script>(function(){try{var t=localStorage.getItem('board-theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<script src="js/theme-boot.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<title>the Board | NTU student businesses, societies and notices</title>
-<meta name="description" content="One place to find student-run businesses, societies and official announcements at NTU.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Instrument+Sans:wght@400;500;600;700&display=swap">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<title>the Board | Student businesses and societies</title>
+<meta name="description" content="One place to find student-run businesses and societies: hair, nails, lashes, food, photography and more.">
+<link rel="preload" href="fonts/instrument-sans-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<script src="js/vendor/supabase-2.119.0.js" defer></script>
+<script src="js/home.js" defer></script>
 <style>
+/* fonts are served from this site (no third-party requests) */
+@font-face{font-family:"Unbounded";font-style:normal;font-weight:700;font-display:swap;src:url(fonts/unbounded-latin-700-normal.woff2) format("woff2")}
+@font-face{font-family:"Unbounded";font-style:normal;font-weight:900;font-display:swap;src:url(fonts/unbounded-latin-900-normal.woff2) format("woff2")}
+@font-face{font-family:"Instrument Sans";font-style:normal;font-weight:400;font-display:swap;src:url(fonts/instrument-sans-latin-400-normal.woff2) format("woff2")}
+@font-face{font-family:"Instrument Sans";font-style:normal;font-weight:500;font-display:swap;src:url(fonts/instrument-sans-latin-500-normal.woff2) format("woff2")}
+@font-face{font-family:"Instrument Sans";font-style:normal;font-weight:600;font-display:swap;src:url(fonts/instrument-sans-latin-600-normal.woff2) format("woff2")}
+@font-face{font-family:"Instrument Sans";font-style:normal;font-weight:700;font-display:swap;src:url(fonts/instrument-sans-latin-700-normal.woff2) format("woff2")}
 /* ===== Tokens ===== */
 :root{
   --bg:#F4F2FB; --surface:#FFFFFF; --ink:#17131F; --muted:#615A72; --line:#17131F; --shadow:#17131F; --chip:#ECE8F7;
@@ -68,7 +74,9 @@ svg{display:block;flex:none}
 .authnav .me .av{box-shadow:none}
 .authnav .btn{padding:8px 16px}
 .logo{white-space:nowrap}
-@media (max-width:640px){.nav a.l,.authnav .navbtn,.authnav .me span:last-child,.listbtn{display:none}.nav{gap:10px}.pill{border-radius:24px;padding:8px 10px 8px 16px}.authnav .btn{padding:8px 14px}}
+.setbtn{width:40px;height:40px;flex:none;color:var(--ink)}
+@media (max-width:640px){.nav .l,.authnav .navbtn:not(.me):not(.adminbtn),.authnav .me span:last-child,.listbtn{display:none}.nav{gap:8px}.pill{border-radius:24px;padding:8px 8px 8px 16px}.authnav .btn{padding:8px 14px}.authnav{gap:8px}}
+@media (max-width:360px){.logo{font-size:17px}.pin{width:20px;height:20px}}
 
 /* ===== Hero (friend's theme) ===== */
 .hero{position:relative;padding-block:44px 36px}
@@ -89,13 +97,17 @@ svg{display:block;flex:none}
 
 /* ===== Marquee ===== */
 .marquee{display:flex;align-items:stretch;border-block:2px solid var(--line);background:var(--pink);color:var(--onpop);overflow:hidden;white-space:nowrap}
-.mq-label{flex:0 0 20%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;line-height:1.15;padding:10px 10px;background:#17131F;color:#fff;font-family:var(--display);font-weight:700;font-size:13px;letter-spacing:0;border-right:2px solid var(--line);z-index:1;white-space:normal}
+.marquee[hidden]{display:none}
+.mq-label{border:0;cursor:pointer;font:inherit;flex:0 0 20%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;line-height:1.15;padding:10px 10px;background:#17131F;color:#fff;font-family:var(--display);font-weight:700;font-size:13px;letter-spacing:0;border-right:2px solid var(--line);z-index:1;white-space:normal}
 .mq-scroll{flex:1;min-width:0;overflow:hidden}
 .track{display:inline-flex;padding-block:12px;font-family:var(--display);font-weight:700;font-size:15px;animation:slide 40s linear infinite}
 .track span{display:inline-flex;align-items:center}
 .track span::after{content:"";width:9px;height:9px;background:var(--onpop);transform:rotate(45deg);margin-inline:34px}
 @keyframes slide{to{transform:translateX(-50%)}}
+.mq-label u{font-family:var(--body);font-weight:600;font-size:12px;text-underline-offset:3px;margin-top:4px}
+.mq-label:hover u{text-decoration-thickness:2px}
 .lbl{font-weight:600;font-size:14px}
+@media (max-width:640px){.mq-label{flex-basis:30%;font-size:12px}}
 
 /* ===== Browse: search, tiles, lanes ===== */
 .browse{padding-top:64px}
@@ -121,7 +133,10 @@ svg{display:block;flex:none}
 
 /* ===== Cards ===== */
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:24px;margin-top:28px}
-.card{display:flex;flex-direction:column;min-width:0;background:var(--surface);border:2px solid var(--line);border-radius:var(--radius);overflow:hidden;box-shadow:4px 4px 0 var(--shadow)}
+.card{display:flex;flex-direction:column;min-width:0;background:var(--surface);border:2px solid var(--line);border-radius:var(--radius);overflow:hidden;box-shadow:4px 4px 0 var(--shadow);transition:transform .12s,box-shadow .12s}
+.card[data-card]{cursor:pointer}
+.card[data-card]:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--shadow)}
+@media (prefers-reduced-motion:reduce){.card{transition:none}.card[data-card]:hover{transform:none}}
 .card-head{position:relative;height:96px;display:flex;align-items:flex-start;padding:16px 20px 0;color:#17131F;border-bottom:2px solid var(--line)}
 .ex{position:absolute;top:12px;right:12px;font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;background:#FFFFFF;color:#17131F;border:2px solid #17131F;border-radius:999px;padding:3px 10px}
 .card-body{display:flex;flex-direction:column;gap:10px;padding:18px 20px 20px;flex:1}
@@ -156,6 +171,8 @@ footer .wrap{display:grid;gap:14px}
 .notice{display:flex;gap:12px;align-items:flex-start;border:2px solid var(--line);border-radius:16px;padding:16px 18px;background:var(--surface)}
 .notice .pin{width:18px;height:18px;margin-top:4px}
 footer small{display:block;max-width:70ch;color:var(--muted);font-size:13px}
+.flinks{display:flex;flex-wrap:wrap;gap:6px 18px;margin:4px 0}
+.flinks a,.flinks button{font-weight:600;font-size:15px;text-decoration:underline;text-underline-offset:3px;background:none;border:0;padding:4px 0;color:var(--ink)}
 .big{font-family:var(--display);font-weight:900;font-size:clamp(48px,14vw,150px);letter-spacing:-.04em;line-height:.95;color:var(--chip);margin-top:12px;user-select:none}
 
 /* ===== Register sheet ===== */
@@ -165,10 +182,6 @@ footer small{display:block;max-width:70ch;color:var(--muted);font-size:13px}
 .sheet-head{display:flex;justify-content:space-between;align-items:center;gap:12px}
 .sheet h2{font-size:20px;letter-spacing:-.02em;outline:none}
 .x{width:40px;height:40px;border:2px solid var(--line);border-radius:50%;background:var(--surface);display:grid;place-items:center}
-.theme-fab{position:fixed;right:18px;bottom:18px;z-index:30;width:52px;height:52px;border:2px solid var(--line);border-radius:50%;background:var(--surface);color:var(--ink);display:grid;place-items:center;box-shadow:3px 3px 0 var(--shadow);transition:transform .12s,box-shadow .12s}
-.theme-fab:hover{transform:translate(-2px,-2px);box-shadow:5px 5px 0 var(--shadow)}
-.theme-fab:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--shadow)}
-@media (max-width:640px){.theme-fab{right:14px;bottom:14px;width:46px;height:46px}}
 .progress{display:flex;gap:6px;margin:16px 0 20px}
 .progress i{flex:1;height:6px;border-radius:9px;background:var(--chip)}
 .progress i.on{background:var(--pink)}
@@ -312,53 +325,6 @@ textarea{resize:vertical;min-height:84px}
 .rbar i{height:10px;border-radius:6px;background:var(--chip);overflow:hidden}
 .rbar b{display:block;height:100%;background:#E8A800}
 .rbar em{font-style:normal;color:var(--muted);text-align:right}
-.msheet{max-width:900px;height:min(88vh,720px);padding:0;overflow:hidden;display:flex}
-.mgrid{display:grid;grid-template-columns:290px 1fr;width:100%;min-height:0;height:100%}
-.mlist{border-right:2px solid var(--line);padding:16px;display:flex;flex-direction:column;min-height:0}
-.mhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
-.mhead h2{font-size:20px;outline:none}
-.mtog{display:grid;grid-template-columns:1fr 1fr;border:2px solid var(--line);border-radius:999px;overflow:hidden}
-.mtog.tri{grid-template-columns:1fr 1fr 1fr}
-.mtog button{background:var(--surface);color:var(--ink);border:0;padding:8px 6px;font:600 13px/1 inherit;cursor:pointer}
-.mtog button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
-.mtog button:focus-visible{outline:3px solid var(--pink);outline-offset:-3px}
-.mths{margin-top:12px;display:grid;gap:8px;overflow:auto;align-content:start}
-.mth{display:flex;align-items:center;gap:10px;text-align:left;border:2px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);padding:8px 10px;cursor:pointer;position:relative}
-.mth[aria-current="true"]{background:var(--butter);color:#17131F}
-.mth:focus-visible{outline:3px solid var(--pink);outline-offset:2px}
-.mt{display:grid;min-width:0;flex:1}
-.mt b{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.mt small{font-size:12px;opacity:.75;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.udot{width:10px;height:10px;border-radius:50%;background:var(--pink);border:2px solid var(--line);flex:none}
-.mempty,.mnone{color:var(--muted);font-size:14px;padding:12px}
-.mchat{display:flex;flex-direction:column;min-width:0;min-height:0;height:100%}
-.mnone{margin:auto;text-align:center;max-width:260px}
-.mchead{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:2px solid var(--line)}
-.mwho{display:grid;flex:1;min-width:0}
-.mwho b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.mwho small{font-size:12px;color:var(--muted)}
-.mback{display:none}
-.mmsgs{flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
-.mb{max-width:78%;display:grid;gap:3px}
-.mb span{padding:10px 14px;border-radius:18px;border:2px solid var(--line);font-size:15px;overflow-wrap:anywhere}
-.mb small{font-size:11px;color:var(--muted)}
-.mb.me{align-self:flex-end}.mb.me span{background:var(--pink);color:var(--onpop);border-bottom-right-radius:4px}.mb.me small{text-align:right}
-.mb.them{align-self:flex-start}.mb.them span{background:var(--surface);border-bottom-left-radius:4px}
-.msys{align-self:center;text-align:center;font-size:13px;color:var(--muted);background:var(--chip);border-radius:999px;padding:6px 14px}
-.mq{display:flex;gap:8px;flex-wrap:wrap;padding:0 16px 8px}
-.mform{display:flex;gap:10px;padding:10px 16px 4px}
-.mform input{flex:1;min-width:0;border:2px solid var(--line);border-radius:999px;padding:10px 16px;font:inherit;background:var(--surface);color:var(--ink)}
-.mform input:focus-visible{outline:3px solid var(--pink);outline-offset:2px}
-.mnote{margin:0;padding:4px 16px 12px}
-@media (max-width:700px){
-  .msheet{height:100dvh;max-height:100dvh;border-radius:0;border:0;max-width:none}
-  .mgrid{grid-template-columns:1fr}
-  .mgrid .mchat{display:none}
-  .msheet.chatting .mlist{display:none}
-  .msheet.chatting .mchat{display:flex}
-  .mback{display:grid}
-  .mlist{border-right:0}
-}
 @media (prefers-reduced-motion:reduce){.chev{transition:none}}
 .rvpick{display:flex;gap:6px;color:#E8A800}
 .rvstar{background:none;border:0;padding:4px;border-radius:10px;color:inherit;cursor:pointer;transition:transform .1s}
@@ -380,6 +346,40 @@ textarea{resize:vertical;min-height:84px}
 .adm .why{font-family:var(--mono);font-size:12px;color:var(--pink)}
 .adm .acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
 .adminbtn{color:var(--pink)}
+.dphotos a{display:block;border:2px solid var(--line);border-radius:12px;overflow:hidden;aspect-ratio:1}
+
+/* ===== Spotlight: Sponsored / Featured (sliding) ===== */
+.promo-c{margin-top:40px}
+.promo-c[hidden]{display:none}
+.why{font-size:13px;color:var(--muted);font-weight:600}
+.why:hover{color:var(--ink)}
+.pc-top{display:flex;align-items:baseline;gap:12px;margin:0 4px 10px}
+.pc-label{font-size:clamp(20px,2.4vw,26px);font-weight:900;letter-spacing:-.03em;margin:0}
+.pc-top .why{margin-left:auto}
+.pc{border:3px solid var(--line);border-radius:36px;overflow:hidden;background:var(--surface);box-shadow:8px 8px 0 var(--pink)}
+.pc-view{overflow:hidden}
+.pc-track{display:flex;will-change:transform}
+.pc-slide{position:relative;display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);min-height:300px;flex:0 0 100%;min-width:0}
+.pv{position:relative;border-right:2px solid var(--line);display:grid;place-items:center;color:#17131F}
+.pv img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.pv-ic{opacity:.55}
+.pv .av{position:absolute;left:24px;bottom:24px;box-shadow:0 0 0 3px var(--surface)}
+.pinfo{padding:28px;display:grid;gap:8px;align-content:start;min-width:0}
+.pinfo .svc{justify-self:start}
+.pinfo h3{font-size:clamp(26px,3.4vw,38px);font-weight:900;letter-spacing:-.035em;line-height:1.15;margin:0;overflow-wrap:anywhere}
+.pinfo .pdesc{margin:0;color:var(--muted);font-size:15px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.pinfo .near{display:inline-flex;align-items:center;gap:6px;margin:0;font-weight:700;font-size:14px}
+.pinfo .near svg{color:var(--pink)}
+.pinfo .rate{margin:0}
+.pc-ctas{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px}
+.pc-nav{display:flex;align-items:center;gap:10px;padding:12px 20px;border-top:2px solid var(--line)}
+.pc-dots{display:flex;gap:8px;flex-wrap:wrap}
+.pc-dots button{width:12px;height:12px;border-radius:50%;border:2px solid var(--line);background:var(--surface);padding:0;cursor:pointer}
+.pc-dots button[aria-current="true"]{background:var(--pink);width:28px;border-radius:999px}
+.pc-dots button:focus-visible{outline:3px solid var(--pink);outline-offset:2px}
+.pc-pause{margin-left:auto;border:2px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:6px 14px;font:inherit;font-weight:700;font-size:13px;cursor:pointer}
+.pc-pause:focus-visible{outline:3px solid var(--pink);outline-offset:2px}
+@media (max-width:760px){.pc-slide{grid-template-columns:1fr}.pv{min-height:170px;border-right:0;border-bottom:2px solid var(--line)}.pv .av{bottom:-30px;left:18px}.pinfo{padding:40px 20px 20px}.pc{border-radius:28px}}
 </style>
 </head>
 <body>
@@ -392,9 +392,9 @@ textarea{resize:vertical;min-height:84px}
         <a class="l" href="#browse">Browse</a>
         <button class="l navbtn" type="button" id="open-rank">Rankings</button>
         <a class="l" href="#how">How it works</a>
-        <button class="l navbtn" type="button" id="open-msg">Messages<span class="mbadge" id="msg-badge" hidden></span></button>
         <span class="authnav" id="auth-nav"></span>
         <button class="btn pink listbtn" type="button" data-open-register>List a business</button>
+        <button class="x setbtn" type="button" id="open-settings" aria-label="Settings"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 13a7.6 7.6 0 0 0 0-2l2.1-1.6a.5.5 0 0 0 .12-.64l-2-3.4a.5.5 0 0 0-.6-.22l-2.5 1a7.8 7.8 0 0 0-1.7-1l-.38-2.6a.5.5 0 0 0-.5-.44h-4a.5.5 0 0 0-.5.44l-.38 2.6a7.8 7.8 0 0 0-1.7 1l-2.5-1a.5.5 0 0 0-.6.22l-2 3.4a.5.5 0 0 0 .12.64L4.6 11a7.6 7.6 0 0 0 0 2l-2.1 1.6a.5.5 0 0 0-.12.64l2 3.4c.13.22.39.3.6.22l2.5-1c.5.4 1.08.74 1.7 1l.38 2.6c.04.25.26.44.5.44h4c.25 0 .46-.19.5-.44l.38-2.6c.62-.26 1.2-.6 1.7-1l2.5 1c.22.08.48 0 .6-.22l2-3.4a.5.5 0 0 0-.12-.64L19.4 13Z"/></svg></button>
       </nav>
     </div>
   </div>
@@ -402,9 +402,9 @@ textarea{resize:vertical;min-height:84px}
 
 <main id="top">
   <section class="hero wrap">
-    <div class="eyebrow"><i aria-hidden="true"></i>Made by NTU students</div>
-    <h1>One site for <span class="hl">everything</span> NTU students are <span class="sq">running.</span></h1>
-    <p class="lede">Student-run businesses, societies, and official announcements, all in one place. No more digging through <s>five different Instagram pages</s> and <s>muted group chats</s>.</p>
+    <div class="eyebrow"><i aria-hidden="true"></i>Made by students, for students</div>
+    <h1>One site for <span class="hl">everything</span> students are <span class="sq">running.</span></h1>
+    <p class="lede">Student-run businesses and societies, all in one place. No more digging through <s>five different Instagram pages</s> and <s>muted group chats</s>.</p>
     <div class="hero-ctas">
       <button class="btn" type="button" data-open-register>Register your business or society
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
@@ -413,12 +413,12 @@ textarea{resize:vertical;min-height:84px}
     </div>
     <div class="stickers" aria-hidden="true">
       <div class="sticker a">knotless braids £45</div>
-      <div class="sticker b">Afro-Caribbean Soc · Thu 7pm</div>
-      <div class="sticker c">Python tutoring · 1st yrs</div>
+      <div class="sticker b">Chess Soc · Thu 7pm</div>
+      <div class="sticker c">Grad shoots · from £25</div>
     </div>
   </section>
 
-  <div class="marquee" role="region" aria-label="Top businesses this week"><span class="mq-label">Top businesses<br>this week</span><div class="mq-scroll" aria-hidden="true"><div class="track" id="track"></div></div></div>
+  <div class="marquee" id="marquee" role="region" aria-label="Top rated businesses" hidden><button class="mq-label" type="button" data-open-rank>Top rated<u>See rankings</u></button><ul class="sr" id="mq-list"></ul><div class="mq-scroll" aria-hidden="true"><div class="track" id="track"></div></div></div>
 
   <section class="wrap browse" id="browse" aria-labelledby="browse-h">
     <h2 class="sr" id="browse-h">Browse the Board</h2>
@@ -426,13 +426,14 @@ textarea{resize:vertical;min-height:84px}
     <form class="search" role="search" id="search-form">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
       <label class="sr" for="q">Search the Board</label>
-      <input id="q" type="search" placeholder="Search braids, Python, netball" autocomplete="off">
+      <input id="q" type="search" placeholder="Search braids, cakes, netball" autocomplete="off">
       <button class="btn pink" type="submit">Search</button>
     </form>
 
     <div class="tiles" id="tiles" role="group" aria-label="Filter student services by category"></div>
     <div class="filter-note" id="filter-note" hidden></div>
     <div class="subs" id="subs" role="group" aria-label="Type" hidden></div>
+    <div class="promo-c" id="promo-c" hidden></div>
 
     <div class="lanes" id="lanes" role="tablist" aria-label="Board sections"></div>
     <p class="sr" id="status" aria-live="polite"></p>
@@ -441,16 +442,16 @@ textarea{resize:vertical;min-height:84px}
 
   <section class="wrap how" id="how" aria-labelledby="how-h">
     <h2 id="how-h">Get on the Board in three steps.</h2>
-    <div class="step"><b>1</b><h3>Pick what you are</h3><p>A side hustle, a society, or an official NTU / NTSU notice.</p></div>
+    <div class="step"><b>1</b><h3>Pick what you are</h3><p>A side hustle, a small business or a society. Make a free account first.</p></div>
     <div class="step"><b>2</b><h3>Add the details</h3><p>What you offer, when you meet, and how people reach you. Real contact details only.</p></div>
-    <div class="step"><b>3</b><h3>Go live</h3><p>Once approved, your listing shows up for every NTU student browsing. One link to share instead of five.</p></div>
+    <div class="step"><b>3</b><h3>Go live</h3><p>Most listings go live straight after an automatic check. Photos, and anything the check flags, get a quick look from our team first.</p></div>
   </section>
 
   <section class="wrap" aria-labelledby="join-h">
     <div class="banner">
       <div>
         <h2 id="join-h">Got a business? List it.</h2>
-        <p>Three short steps. Free to list, always. Your listing goes live once it has been approved.</p>
+        <p>Three short steps. Free to list, always.</p>
       </div>
       <button class="btn dark" type="button" data-open-register>Register your business</button>
     </div>
@@ -459,9 +460,9 @@ textarea{resize:vertical;min-height:84px}
 
 <footer>
   <div class="wrap">
-    <div class="notice"><span class="pin" aria-hidden="true"></span><div><strong>Business and society listings are real,</strong> submitted by NTU students. Messaging is a demo feature for now and isn't saved anywhere.</div></div>
-    <small>The Board is a listings platform only. We don't vet, endorse, or take responsibility for the quality of anyone's product or service.</small>
-    <small>Not an official NTU or NTSU service. <a href="/rules.html">Community rules</a></small>
+    <div class="notice"><span class="pin" aria-hidden="true"></span><div><strong>Every listing and review is posted by a student.</strong> To book or ask a question, contact the business directly using the details on their listing.</div></div>
+    <nav class="flinks" aria-label="About the Board"><a href="/how-it-works.html">How it works</a><button type="button" data-open-rank>Top rated</button><a href="/rules.html">Community rules</a><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a><a href="mailto:daxsintech@gmail.com">Contact us</a></nav>
+    <small>The Board is a listings platform only. We don't vet, endorse, or take responsibility for the quality of anyone's product or service. Not an official university or students’ union service. Run by DAXSintech, Nottingham.</small>
     <div class="big" aria-hidden="true">the Board</div>
   </div>
 </footer>
@@ -480,1026 +481,7 @@ textarea{resize:vertical;min-height:84px}
 </div>
 <div class="toast" id="toast" role="status" hidden></div>
 
-<button class="theme-fab" type="button" id="open-settings" aria-label="Settings">
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 13a7.6 7.6 0 0 0 0-2l2.1-1.6a.5.5 0 0 0 .12-.64l-2-3.4a.5.5 0 0 0-.6-.22l-2.5 1a7.8 7.8 0 0 0-1.7-1l-.38-2.6a.5.5 0 0 0-.5-.44h-4a.5.5 0 0 0-.5.44l-.38 2.6a7.8 7.8 0 0 0-1.7 1l-2.5-1a.5.5 0 0 0-.6.22l-2 3.4a.5.5 0 0 0 .12.64L4.6 11a7.6 7.6 0 0 0 0 2l-2.1 1.6a.5.5 0 0 0-.12.64l2 3.4c.13.22.39.3.6.22l2.5-1c.5.4 1.08.74 1.7 1l.38 2.6c.04.25.26.44.5.44h4c.25 0 .46-.19.5-.44l.38-2.6c.62-.26 1.2-.6 1.7-1l2.5 1c.22.08.48 0 .6-.22l2-3.4a.5.5 0 0 0-.12-.64L19.4 13Z"/></svg>
-</button>
 <noscript><div class="wrap" style="padding-block:24px">The Board needs JavaScript to show listings.</div></noscript>
 
-<script>
-/* ---------- icons (one stroke style) ---------- */
-const ICONS={
-  scissors:'M9 6a3 3 0 11-6 0 3 3 0 016 0z M9 18a3 3 0 11-6 0 3 3 0 016 0z M20 4L8.1 15.9 M14.5 14.5L20 20 M8.1 8.1L12 12',
-  sparkle:'M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z M19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z',
-  cup:'M5 8h12v5a5 5 0 01-5 5h-2a5 5 0 01-5-5V8z M17 9h1.5a2.5 2.5 0 010 5H17 M8 3v2 M12 3v2',
-  book:'M4 19.5A2.5 2.5 0 016.5 17H20V3H6.5A2.5 2.5 0 004 5.5z M4 19.5V21h16',
-  bolt:'M13 2L4 14h7l-1 8 9-12h-7z',
-  camera:'M3 8a2 2 0 012-2h2l1.5-2.5h7L17 6h2a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2z M16 13a4 4 0 11-8 0 4 4 0 018 0z',
-  eye:'M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z M15 12a3 3 0 11-6 0 3 3 0 016 0z',
-  star:'M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z',
-  users:'M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2 M9 11a4 4 0 100-8 4 4 0 000 8z M22 21v-2a4 4 0 00-3-3.9 M16 3.1a4 4 0 010 7.8',
-  bell:'M6 8a6 6 0 0112 0c0 7 3 9 3 9H3s3-2 3-9 M10.3 21a1.94 1.94 0 003.4 0',
-  pound:'M18 7a4 4 0 00-4-3c-2.5 0-4 1.6-4 4v4 M6 12h8 M6 20h12 M10 12v4c0 2-1 3-4 4'
-};
-const svg=(d,s=40,w=1.8)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`;
-const CAT={
-  Hair:{c:'#FFB8D9',i:'scissors'}, Nails:{c:'#FFD84D',i:'sparkle'}, Lashes:{c:'#F7B8E0',i:'eye'},
-  Food:{c:'#B8F2D8',i:'cup'}, Tutoring:{c:'#C9DDFF',i:'book'}, Repairs:{c:'#E0D4FF',i:'bolt'},
-  Photography:{c:'#FFC9A8',i:'camera'}, Other:{c:'#DAD6EA',i:'star'}
-};
-const TILES=['Hair','Nails','Food','Tutoring','Repairs','Photography'];
-const LANES=[
-  {k:'services',t:'Student services',d:'Hair, nails, tutoring, repairs and more.',c:'var(--butter)'},
-  {k:'socs',t:'Societies',d:'What’s on, when it meets, how to join.',c:'var(--mint)'},
-  {k:'official',t:'Official adverts',d:'Notices from NTU and NTSU.',c:'var(--sky)'}
-];
-
-/* ---------- live data (Supabase-backed) ---------- */
-const sb=window.supabase.createClient('https://xvenwgfvgkdauxfkcgcg.supabase.co','sb_publishable_BgpvbiU9CkH2y1WSS3ZPWw_6yTCivS0');
-const SUBS={Hair:['Barbers','Braids'],Nails:['Gel & BIAB','Acrylics','Nail art'],Food:['Cakes & bakes','Meal prep','Hot meals','Snacks'],Tutoring:['Coding','Maths & stats','Academic writing','Languages'],Photography:['Grad shoots','Portraits','Events'],Repairs:['Phones']};
-const SUB_TO_CAT={};
-Object.entries(SUBS).forEach(([c,ss])=>ss.forEach(s=>SUB_TO_CAT[s]=c));
-function bizFromRow(row){
-  const cat=SUB_TO_CAT[row.what]||'Other';
-  return {id:row.id,name:row.name,cat,sub:row.what,desc:row.description||'',meta:[row.location,row.price].filter(Boolean),contact:row.contact||'',menu:row.price?[{g:null,items:[[row.what||'Service',row.price]]}]:[],policy:null,reviews:[],sections:[],status:row.status||'live',owner:row.owner_id};
-}
-function socFromRow(row){
-  return {id:row.id,name:row.name,cat:row.what||'Other',desc:row.description||'',meta:(row.meet||'').split(',').map(s=>s.trim()).filter(Boolean),contact:row.contact||'',status:row.status||'live',owner:row.owner_id};
-}
-const DATA={services:[],socs:[],official:[]};
-async function loadData(){
-  const [b,s]=await Promise.all([
-    sb.from('businesses').select('*').order('created_at',{ascending:false}),
-    sb.from('societies').select('*').order('created_at',{ascending:false})
-  ]);
-  const me=(await sb.auth.getUser()).data.user;
-  const shown=x=>x.status==='live'||(!!me&&(x.owner_id===me.id||x.user_id===me.id));
-  DATA.services=(b.data||[]).filter(shown).map(bizFromRow);
-  const r=await sb.from('reviews').select('*').order('created_at',{ascending:false});
-  (r.data||[]).filter(shown).forEach(x=>{const it=DATA.services.find(i=>String(i.id)===String(x.business_id));if(it)it.reviews.push({id:x.id,s:x.stars,t:x.body,w:x.reviewer_name||'Student',x:new Date(x.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}),mine:!!me&&x.user_id===me.id,uid:x.user_id,status:x.status})});
-  DATA.socs=(s.data||[]).filter(shown).map(socFromRow);
-  DATA.official=[];
-}
-/* ---------- OLD example data, retained only for reference, unused ----------
-const _UNUSED_DATA={
-  services:[
-    {"name": "Fade Theory", "cat": "Hair", "sub": "Barbers", "desc": "Clean fades and tapers in my Clifton halls kitchen. Sharp lineups, no rush, good music.", "meta": ["Clifton campus", "Evenings and weekends"], "contact": "@fade.theory", "menu": [{"g": null, "items": [["Fade", "£25"], ["Taper", "£25"], ["Lineup", "£15"]]}, {"g": "Add-ons", "items": [["Beard trim", "+£5"], ["Parting or design", "+£5"]]}], "policy": null, "reviews": [{"s": 5, "t": "Best fade I've had since moving to Nottingham. Booked again straight away.", "w": "Jaden M.", "x": "2 weeks ago"}, {"s": 5, "t": "On time, clean, and he actually listens to what you ask for.", "w": "Kofi A.", "x": "1 month ago"}, {"s": 4, "t": "Great taper. Slightly tight on time before my lecture but no complaints on the cut.", "w": "Dan R.", "x": "1 month ago"}], "sections": [{"t": "Late fees", "k": "fees", "rows": [["Up to 10 minutes", "Grace period, no fee"], ["10 to 15 minutes late", "£5"], ["15 to 20 minutes late", "£10"], ["More than 20 minutes late", "Appointment cancelled"]]}, {"t": "Late policy", "k": "list", "items": ["There is a 10 minute grace period. Message me if you're running behind.", "After the grace period a late fee applies, shown above.", "If your slot is cancelled for lateness, your deposit is kept."]}, {"t": "Hair policies", "k": "list", "items": ["Come with your hair washed or tell me when booking.", "A £10 deposit secures your slot and comes off your total. It is non-refundable.", "Reschedule at least 24 hours ahead to move your deposit.", "Bookings within 24 hours are emergency appointments, +£5.", "Cash or bank transfer accepted."]}]},
-    {"name": "Clifton Cuts", "cat": "Hair", "sub": "Barbers", "desc": "Student barber doing fades, tapers and lineups. Walk-ups only if there's a gap, otherwise message first.", "meta": ["Clifton campus", "Mon to Sat"], "contact": "@cliftoncuts", "menu": [{"g": null, "items": [["Fade", "£22 to £25"], ["Taper", "£22"], ["Lineup", "£12 to £15"]]}, {"g": "Add-ons", "items": [["Beard trim", "+£5"]]}], "policy": null, "reviews": [{"s": 4, "t": "Solid cut for the price. Easy to book over Instagram.", "w": "Marcus T.", "x": "3 weeks ago"}, {"s": 5, "t": "Lineup was perfect and it took 20 minutes.", "w": "Ellis W.", "x": "2 months ago"}], "sections": [{"t": "Late fees", "k": "fees", "rows": [["Up to 10 minutes", "Grace period, no fee"], ["10 to 20 minutes late", "£5"], ["More than 20 minutes late", "Appointment cancelled"]]}, {"t": "Late policy", "k": "list", "items": ["10 minute grace period, then a £5 late fee.", "Over 20 minutes late I may give the slot to someone else.", "Let me know in advance if you think you'll be late."]}, {"t": "Hair policies", "k": "list", "items": ["Clean, product-free hair please. A rinse before you come is enough.", "No deposit needed for returning clients, £5 for first-time clients.", "Walk-ups only if there's a free gap.", "Cash only. Please withdraw before your appointment."]}]},
-    {"name": "Braids by Amara", "cat": "Hair", "sub": "Braids", "desc": "Knotless braids, cornrows and twists for men and women. Done in my City campus flat. Bring your own hair or I can source it.", "meta": ["City campus", "Book 1 week ahead"], "contact": "@braidsbyamara", "menu": [{"g": "Men", "items": [["Twists", "£40"], ["Cornrows", "£25"], ["Retwist", "£60"]]}, {"g": "Women", "items": [["Boho braids", "£150"], ["Fulani braids", "£105"]]}, {"g": "Add-ons", "items": [["Zigzag or curved partings", "+£5"], ["Blow drying", "+£5"], ["Curled ends", "+£5"]]}], "policy": null, "reviews": [{"s": 5, "t": "My boho braids lasted six weeks and looked great the whole time.", "w": "Chidera O.", "x": "1 week ago"}, {"s": 5, "t": "Cornrows were neat and didn't hurt. She keeps you comfortable.", "w": "Tobi A.", "x": "3 weeks ago"}, {"s": 4, "t": "Gorgeous Fulani braids. Took a bit longer than quoted but worth it.", "w": "Hannah B.", "x": "2 months ago"}], "sections": [{"t": "Late fees", "k": "fees", "rows": [["Up to 10 minutes", "Grace period, no fee"], ["10 to 20 minutes late", "£5"], ["20 to 30 minutes late", "£10"], ["30 minutes or more late", "Appointment cancelled"]]}, {"t": "Late policy", "k": "list", "items": ["There is a 10 minute grace period before a late fee applies.", "Late fees are paid in cash on the day, on top of your total.", "More than 30 minutes late and the appointment is cancelled."]}, {"t": "Hair policies", "k": "list", "items": ["Come with hair freshly washed, fully dry and with no product added. If hair isn't prepped the appointment may be cancelled and the deposit kept.", "Hair should be detangled. A detangling fee may apply if it isn't.", "A non-refundable deposit of £10 secures your appointment. It is deducted from your total.", "Bring your own hair or tell me when booking if you need me to source it. Wigs should be dropped off at least 5 days before.", "Appointments booked within 24 hours are emergency appointments, +£10. Anything outside 9am to 6pm is +£15.", "Cash payments only."]}]},
-    {"name": "Plaited by Zee", "cat": "Hair", "sub": "Braids", "desc": "Retwists, twists and Fulani braids. Quick turnaround on retwists, I work Sundays too.", "meta": ["Clifton campus", "Includes Sundays"], "contact": "@plaitedbyzee", "menu": [{"g": "Men", "items": [["Twists", "£35 to £45"], ["Cornrows", "£15 to £35"], ["Retwist", "£55"]]}, {"g": "Women", "items": [["Boho braids", "£140"], ["Fulani braids", "£95 to £110"]]}, {"g": "Add-ons", "items": [["Zigzag or curved partings", "+£5"], ["Bum length", "+£10"]]}], "policy": null, "reviews": [{"s": 5, "t": "Retwist done in under two hours, neat parts. Will be back.", "w": "Emeka N.", "x": "2 weeks ago"}, {"s": 4, "t": "Fulani braids looked amazing. Wish the booking messages were a bit faster.", "w": "Sasha K.", "x": "1 month ago"}], "sections": [{"t": "Late fees", "k": "fees", "rows": [["Up to 10 minutes", "Grace period, no fee"], ["10 to 15 minutes late", "£10"], ["15 to 20 minutes late", "£15"], ["20 minutes or more late", "Cancelled, or £20 fee at my discretion"]]}, {"t": "Late policy", "k": "list", "items": ["If you think you'll be late, let me know. You get a 10 minute grace period.", "Late fees depend on how much the delay affects other clients."]}, {"t": "Hair policies", "k": "list", "items": ["Hair must be washed, detangled, blow-dried and free of product and oils.", "Blow-dry add-on available when booking, +£5. Not blow-dried without telling me first is +£10.", "A £10 non-refundable deposit is needed to secure your appointment and goes towards the total.", "Reschedule at least 24 hours ahead to carry your deposit over. Same-day cancellations count as no-shows and may cost 50% of the total.", "Sunday and evening appointments are +£15."]}]},
-    {"name": "Nailed It Notts", "cat": "Nails", "sub": "Gel & BIAB", "desc": "BIAB, gel extensions and gel polish. Price list and recent sets on my page.", "meta": ["City campus", "From £18"], "contact": "@nailedit.notts", "menu": [{"g": null, "items": [["Gel polish", "£18"], ["BIAB overlay", "£30"], ["Gel extensions", "£35"], ["Infill", "£25"]]}], "policy": "Late policy: more than 10 minutes late and your set may be shortened or rebooked.", "reviews": [{"s": 5, "t": "BIAB lasted over four weeks with no lifting.", "w": "Priya S.", "x": "1 week ago"}, {"s": 5, "t": "Really tidy work and the studio corner is spotless.", "w": "Leah C.", "x": "3 weeks ago"}, {"s": 4, "t": "Lovely set, just ask for a slot early because she books up.", "w": "Ama D.", "x": "1 month ago"}]},
-    {"name": "Acrylic Avenue", "cat": "Nails", "sub": "Acrylics", "desc": "Full sets, infills and soak-offs. Short, medium and long, in whatever shape you like.", "meta": ["Clifton campus", "Weekends"], "contact": "@acrylic.avenue", "menu": [{"g": null, "items": [["Full set", "£32"], ["Infill", "£22"], ["Soak-off", "£10"]]}], "policy": "Late policy: more than 10 minutes late and a late fee applies.", "reviews": [{"s": 4, "t": "Good shape and finish. Took a while but she was thorough.", "w": "Rhea P.", "x": "2 weeks ago"}, {"s": 5, "t": "Best acrylics I've found near campus.", "w": "Jo L.", "x": "2 months ago"}]},
-    {"name": "Chrome & Co", "cat": "Nails", "sub": "Nail art", "desc": "Chrome, 3D charms and hand-painted art. Bring a reference picture and we match it.", "meta": ["City campus", "Book 5 days ahead"], "contact": "@chromeandco.nails", "menu": [{"g": null, "items": [["Chrome finish (add-on)", "£8"], ["Hand-painted art, per nail", "£3"], ["3D charm, each", "£2"]]}], "policy": "Late policy: more than 10 minutes late and the art may be simplified to fit the slot.", "reviews": [{"s": 5, "t": "She nailed my reference photo exactly.", "w": "Mia F.", "x": "1 week ago"}, {"s": 5, "t": "The chrome looks unreal in the light.", "w": "Sofia G.", "x": "1 month ago"}]},
-    {"name": "Bake Me Happy", "cat": "Food", "sub": "Cakes & bakes", "desc": "Birthday cakes, cupcakes and brownies for flat parties. Order 3 days ahead.", "meta": ["Collection: Clifton", "Pre-order only"], "contact": "@bakemehappy.ntu", "menu": [{"g": null, "items": [["Brownie box (9)", "£12"], ["Cupcakes (6)", "£14"], ["Celebration cake (8 slices)", "£28"]]}], "policy": "Orders must be placed 3 days ahead. Cancel at least 24 hours before collection.", "reviews": [{"s": 5, "t": "The brownies vanished in ten minutes at our flat party.", "w": "Ruth E.", "x": "1 week ago"}, {"s": 5, "t": "Cake looked and tasted amazing for the price.", "w": "Ben H.", "x": "3 weeks ago"}, {"s": 4, "t": "Great flavour, collection time was a bit tight.", "w": "Ify U.", "x": "2 months ago"}]},
-    {"name": "Prep Squad", "cat": "Food", "sub": "Meal prep", "desc": "High-protein meal-prep boxes. Order by Thursday, collect on campus Sunday.", "meta": ["Collection: City campus", "Weekly"], "contact": "@prepsquad.ntu", "menu": [{"g": null, "items": [["Chicken, rice and greens", "£6"], ["Veggie chilli box", "£5.50"], ["5-day bundle", "£27"]]}], "policy": "Order by Thursday 6pm for Sunday collection. No refunds once prepared.", "reviews": [{"s": 5, "t": "Saves me so much time in exam weeks. Portions are generous.", "w": "Callum J.", "x": "2 weeks ago"}, {"s": 4, "t": "Tasty and good value. I'd love more veggie options.", "w": "Anya V.", "x": "1 month ago"}]},
-    {"name": "Mama Tee's Kitchen", "cat": "Food", "sub": "Hot meals", "desc": "Jollof, suya wraps and fried plantain, cooked fresh and delivered around Clifton on weekends.", "meta": ["Delivery: Clifton", "Fri to Sun"], "contact": "@mamatees.kitchen", "menu": [{"g": null, "items": [["Jollof rice and chicken", "£7"], ["Suya wrap", "£6"], ["Fried plantain", "£3"]]}], "policy": "Orders close at 5pm on the day. Delivery within 1 mile of campus.", "reviews": [{"s": 5, "t": "Tastes like home. Delivery was quick.", "w": "Ngozi I.", "x": "1 week ago"}, {"s": 5, "t": "The suya wrap is the best thing I've eaten this term.", "w": "Tariq B.", "x": "3 weeks ago"}, {"s": 4, "t": "Great food, portion was big. Would order again.", "w": "Ellie M.", "x": "1 month ago"}]},
-    {"name": "Chin Chin Co.", "cat": "Food", "sub": "Snacks", "desc": "Chin chin, puff puff and zobo drink. Perfect for society socials and study sessions.", "meta": ["Collection: City campus", "Bulk orders welcome"], "contact": "@chinchinco", "menu": [{"g": null, "items": [["Chin chin bag", "£4"], ["Puff puff (10)", "£5"], ["Zobo bottle", "£3"]]}], "policy": "Bulk orders of 20+ need 5 days notice.", "reviews": [{"s": 5, "t": "Ordered for our society social and they were gone in minutes.", "w": "Dami K.", "x": "2 weeks ago"}, {"s": 4, "t": "Crunchy and fresh. Please make bigger bags.", "w": "Josh T.", "x": "2 months ago"}]},
-    {"name": "Code Help with Tolu", "cat": "Tutoring", "sub": "Coding", "desc": "Final-year CompSci student tutoring first and second years in Python, Java and SQL. Assessment prep and debugging.", "meta": ["Online or library", "£15 per hour"], "contact": "tolu.codehelp@example.com", "menu": [{"g": null, "items": [["1 hour session", "£15"], ["Debugging rescue (30 min)", "£8"], ["Block of 5 hours", "£65"]]}], "policy": "Cancel at least 12 hours before to avoid being charged. Sessions start on time.", "reviews": [{"s": 5, "t": "Explained recursion in a way that finally clicked.", "w": "Alex R.", "x": "1 week ago"}, {"s": 5, "t": "Helped me debug my SQL coursework in one session.", "w": "Maya Q.", "x": "1 month ago"}]},
-    {"name": "Maths and Stats with Priya", "cat": "Tutoring", "sub": "Maths & stats", "desc": "Calculus, linear algebra, probability and stats modules. Patient and exam focused.", "meta": ["In person at Clifton", "£14 per hour"], "contact": "@priya.mathshelp", "menu": [{"g": null, "items": [["1 hour session", "£14"], ["Exam prep (2 hours)", "£26"]]}], "policy": "Cancel at least 12 hours before to avoid being charged.", "reviews": [{"s": 4, "t": "Went through past papers step by step. My grade went up a band.", "w": "Sam L.", "x": "2 weeks ago"}, {"s": 5, "t": "Very patient and clear.", "w": "Nia B.", "x": "2 months ago"}]},
-    {"name": "Essay Clinic", "cat": "Tutoring", "sub": "Academic writing", "desc": "Feedback on structure, referencing and argument for essays and reports. I do not write your work for you.", "meta": ["Online", "£15 per hour"], "contact": "essayclinic.ntu@example.com", "menu": [{"g": null, "items": [["Draft review (1 hour)", "£15"], ["Referencing check", "£10"]]}], "policy": "Cancel at least 12 hours before to avoid being charged.", "reviews": [{"s": 5, "t": "Gave me a clear plan to restructure my report.", "w": "Grace O.", "x": "3 weeks ago"}, {"s": 4, "t": "Helpful feedback, quick turnaround.", "w": "Leo P.", "x": "2 months ago"}]},
-    {"name": "Hablamos con Lucia", "cat": "Tutoring", "sub": "Languages", "desc": "Conversation practice and grammar help in Spanish for all levels.", "meta": ["Online or library", "£12 per hour"], "contact": "@hablamos.lucia", "menu": [{"g": null, "items": [["Conversation hour", "£12"], ["Grammar and homework help", "£12"]]}], "policy": "Cancel at least 12 hours before to avoid being charged.", "reviews": [{"s": 5, "t": "Fun lessons and I finally speak without freezing.", "w": "Oli D.", "x": "1 month ago"}]},
-    {"name": "Shot on Clifton", "cat": "Photography", "sub": "Grad shoots", "desc": "Grad shoots, society headshots and event coverage. Edited photos back within a week.", "meta": ["Nottingham and campus", "From £25"], "contact": "@shotonclifton", "menu": [{"g": null, "items": [["Mini grad shoot (30 min)", "£25"], ["Full grad shoot (1 hour)", "£45"], ["Society headshots, per person", "£10"]]}], "policy": "Rescheduling is free with 24 hours notice. More than 10 minutes late may shorten the shoot.", "reviews": [{"s": 5, "t": "Grad photos came out better than I dreamed.", "w": "Kemi A.", "x": "1 week ago"}, {"s": 5, "t": "Fast edits and very relaxed to be photographed by.", "w": "Will S.", "x": "1 month ago"}, {"s": 4, "t": "Great pictures, location was a bit busy.", "w": "Tia R.", "x": "2 months ago"}]},
-    {"name": "Frame by Femi", "cat": "Photography", "sub": "Portraits", "desc": "Portraits, LinkedIn headshots and creator content with natural light.", "meta": ["City campus", "From £20"], "contact": "@framebyfemi", "menu": [{"g": null, "items": [["Headshot (20 min)", "£20"], ["Portrait session (45 min)", "£40"]]}], "policy": "Rescheduling is free with 24 hours notice.", "reviews": [{"s": 5, "t": "My LinkedIn photo got me compliments from recruiters.", "w": "Ravi S.", "x": "2 weeks ago"}, {"s": 5, "t": "Made me feel comfortable straight away.", "w": "Isla N.", "x": "1 month ago"}]},
-    {"name": "Society Snaps", "cat": "Photography", "sub": "Events", "desc": "Event coverage for societies, balls and socials. Edited gallery within 5 days.", "meta": ["Nottingham", "From £60"], "contact": "societysnaps@example.com", "menu": [{"g": null, "items": [["Event, 2 hours", "£60"], ["Event, 4 hours", "£110"]]}], "policy": "Bookings need 7 days notice. Deposit confirms the date.", "reviews": [{"s": 4, "t": "Covered our ball well. Gallery came back on time.", "w": "Hugo C.", "x": "3 weeks ago"}]},
-    {"name": "Fixd Phone Repairs", "cat": "Repairs", "sub": "Phones", "desc": "Cracked iPhone and Samsung screens, battery swaps and charging ports. Most jobs done same day.", "meta": ["Clifton campus", "Same day"], "contact": "@fixd.phones", "menu": [{"g": null, "items": [["Screen replacement", "£50"], ["Battery swap", "£30"], ["Charging port", "£35"]]}], "policy": "Quote given before any work starts. 30-day warranty on parts.", "reviews": [{"s": 5, "t": "Screen done in an hour. Phone feels new.", "w": "Joe F.", "x": "2 weeks ago"}, {"s": 4, "t": "Fair price and honest about what needed fixing.", "w": "Aisha M.", "x": "2 months ago"}]},
-  ],
-  socs:[
-    {name:'Afro-Caribbean Society',cat:'Culture',desc:'Socials, a big annual cultural show and a family vibe for anyone who wants in.',meta:['Thu · 7pm','Newton building'],contact:'@ntuacs'},
-    {name:'Tech & Code Society',cat:'Tech',desc:'Hack nights, CV clinics with alumni and a chill Discord for help with coursework.',meta:['Wed · 6pm','Clifton, ERD'],contact:'discord.gg/ntu-techsoc'},
-    {name:'NTU Netball',cat:'Sport',desc:'Competitive BUCS squads and a no-trial social team. Kit not needed for tasters.',meta:['Mon · 8pm','Lee Westwood Sports Centre'],contact:'@ntunetball'},
-    {name:'Film Society',cat:'Arts',desc:'Weekly screenings with snacks, plus one short-film project every term.',meta:['Tue · 7:30pm','City campus'],contact:'@ntufilmsoc'},
-    {name:'Islamic Society',cat:'Faith',desc:'Jummah reminders, iftars in Ramadan and weekly socials open to everyone.',meta:['Fri','City campus'],contact:'@ntuisoc'}
-  ],
-  official:[
-    {name:'Freshers Fair round two',cat:'NTSU',desc:'Missed the first one? More societies and local businesses at City campus, with free stuff while it lasts.',meta:['City campus'],contact:'Posted by NTSU'},
-    {name:'Library opening hours change',cat:'NTU',desc:'Boots Library extends to 24/7 opening during assessment periods. Bring your student ID after 10pm.',meta:['Boots Library'],contact:'Posted by NTU Library'},
-    {name:'Student rep elections open',cat:'NTSU',desc:'Run to represent your course. Nominations are short and voting happens online.',meta:['All campuses'],contact:'Posted by NTSU'}
-  ]
-};
----------------------------------------------------------------------------- */
-let sub=null;
-const avg=it=>{const l=(it.reviews||[]).filter(r=>r.status!=='pending');return l.length?l.reduce((a,r)=>a+r.s,0)/l.length:0};
-const stars=(n,sz=14)=>{const r=Math.round(n);return `<span class="stars" role="img" aria-label="${n.toFixed(1)} out of 5">${[1,2,3,4,5].map(i=>`<svg width="${sz}" height="${sz}" viewBox="0 0 24 24" fill="${i<=r?'currentColor':'none'}" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="${ICONS.star}"/></svg>`).join('')}</span>`};
-const fromPrice=it=>{const v=[].concat(...(it.menu||[]).filter(g=>g.g!=='Add-ons').map(g=>g.items.map(i=>{const m=String(i[1]).match(/\d+(\.\d+)?/);return m?parseFloat(m[0]):NaN}))).filter(x=>!isNaN(x));return v.length?'From £'+Math.min(...v):''};
-const initials=n=>n.split(/\s+/).filter(w=>/^[A-Za-z0-9]/.test(w)).slice(0,2).map(w=>w[0].toUpperCase()).join('');
-const avatar=(it,sz)=>`<span class="av" aria-hidden="true" style="--s:${sz}px;background:${(CAT[it.cat]||CAT.Other).c}">${it.avatar?`<img src="${it.avatar}" alt="" decoding="async">`:`<b>${esc(initials(it.name))}</b>`}</span>`;
-const INTRO={services:'',socs:'',official:''};
-const MARQUEE=['Hair','Nails','Lashes','Tutoring','Phone repairs','Societies','Socials','Freshers fairs','NTSU notices','Cake orders','Photography'];
-
-/* ---------- state + helpers ---------- */
-let tab='services', cat=null;
-const $=id=>document.getElementById(id);
-const grid=$('grid'), q=$('q');
-const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let tt;
-function say(m){const t=$('toast');t.textContent=m;t.hidden=false;clearTimeout(tt);tt=setTimeout(()=>t.hidden=true,1800)}
-
-/* ---------- marquee ---------- */
-function paintMarquee(){
-  const TOP=ranked().slice(0,8).map(x=>x.name);
-  $('track').innerHTML=TOP.length?TOP.concat(TOP,TOP,TOP).map(w=>`<span>${esc(w)}</span>`).join(''):'';
-}
-
-/* ---------- tiles ---------- */
-$('tiles').innerHTML=TILES.map(t=>`<button class="tile" type="button" data-cat="${t}" aria-pressed="false" style="background:${CAT[t].c}">${svg(ICONS[CAT[t].i],34,2)}<b>${t}</b></button>`).join('');
-$('tiles').addEventListener('click',e=>{
-  const b=e.target.closest('.tile');if(!b)return;
-  cat=(cat===b.dataset.cat)?null:b.dataset.cat;
-  if(cat)tab='services';
-  render();
-});
-
-/* ---------- lanes (tabs) ---------- */
-$('lanes').innerHTML=LANES.map(l=>`<button class="lane" role="tab" id="tab-${l.k}" data-tab="${l.k}" aria-selected="false" tabindex="-1" style="--c:${l.c}"><h3>${l.t}<span class="n" id="n-${l.k}"></span></h3><p>${l.d}</p></button>`).join('');
-$('lanes').addEventListener('click',e=>{
-  const b=e.target.closest('.lane');if(!b)return;
-  tab=b.dataset.tab;if(tab!=='services')cat=null;render();
-});
-$('lanes').addEventListener('keydown',e=>{
-  const keys=LANES.map(l=>l.k),i=keys.indexOf(tab);
-  let n=null;
-  if(e.key==='ArrowRight')n=(i+1)%keys.length;
-  if(e.key==='ArrowLeft')n=(i+keys.length-1)%keys.length;
-  if(n===null)return;
-  e.preventDefault();tab=keys[n];if(tab!=='services')cat=null;render();$('tab-'+tab).focus();
-});
-
-/* ---------- cards ---------- */
-function headFor(it,kind){
-  if(kind==='services'){const c=CAT[it.cat]||CAT.Other;return {bg:c.c,icon:ICONS[c.i]}}
-  if(kind==='socs')return {bg:'var(--mint)',icon:ICONS.users};
-  return {bg:'var(--sky)',icon:ICONS.bell};
-}
-function cardHTML(it,kind){
-  const h=headFor(it,kind),ph=it.photos||[];
-  const exBadge=it.mine?`<span class="ex">Your preview</span>`:it.status==='pending'?`<span class="ex">Waiting for approval</span>`:'';
-  const head=ph.length
-    ?`<div class="card-head has-photo"><button class="shot" type="button" data-lb="${it.id||''}" aria-label="View ${ph.length} photo${ph.length>1?'s':''} of ${esc(it.name)}"><img src="${ph[0]}" alt="" decoding="async" loading="lazy"></button>${ph.length>1?`<span class="pc">1/${ph.length}</span>`:''}${exBadge}</div>`
-    :`<div class="card-head" style="background:${h.bg}">${svg(h.icon,44,1.7)}${exBadge}</div>`;
-  return `<article class="card">
-    ${head}
-    <div class="card-body">
-      ${kind==='services'?`<div class="who">${avatar(it,64)}<span class="svc">${esc(it.sub||it.cat)}</span></div><span class="cat">${esc(it.cat)}</span>`:`<span class="cat">${esc(it.cat)}</span>`}
-      <h3>${esc(it.name)}</h3>
-      ${kind==='services'?`<div class="rate">${it.reviews&&it.reviews.length?`${stars(avg(it))}<span>${avg(it).toFixed(1)} (${it.reviews.length})</span>`:'<span>No reviews yet</span>'}</div>`:''}
-      <p>${esc(it.desc)}</p>
-      <div class="meta">${(kind==='services'&&fromPrice(it)?[fromPrice(it)]:[]).concat(it.meta).map(m=>`<span>${esc(m)}</span>`).join('')}</div>
-      ${kind==='services'?`<button class="btn dark sm" type="button" data-detail="${esc(it.id||'')}">Menu and reviews</button>`:''}
-      <div class="contact"><code>${esc(it.contact)}</code>${kind==='official'?'':`<button class="copy" type="button" data-copy="${esc(it.contact)}">Copy</button>`}</div>${kind==='socs'&&!it.mine?`<button class="link rep" type="button" data-report="society" data-rid="${esc(it.id)}">Report</button>`:''}
-    </div>
-  </article>`;
-}
-function render(){
-  const term=q.value.trim().toLowerCase();
-  LANES.forEach(l=>{
-    const b=$('tab-'+l.k);
-    b.setAttribute('aria-selected',l.k===tab);
-    b.tabIndex=l.k===tab?0:-1;
-    $('n-'+l.k).textContent=DATA[l.k].length;
-  });
-  document.querySelectorAll('.tile').forEach(t=>t.setAttribute('aria-pressed',t.dataset.cat===cat));
-  const note=$('filter-note');
-  if(cat){note.hidden=false;note.innerHTML=`Showing ${esc(cat)} only. <button class="link" type="button" id="clear-cat">Show all services</button>`;$('clear-cat').addEventListener('click',()=>{cat=null;render()})}
-  else note.hidden=true;
-  if(sub&&!(SUBS[cat]||[]).includes(sub))sub=null;
-  const sb=$('subs');
-  if(tab==='services'&&cat&&SUBS[cat]&&SUBS[cat].length>1){sb.hidden=false;sb.innerHTML=['All'].concat(SUBS[cat]).map(x=>`<button class="chipbtn" type="button" data-sub="${esc(x)}" aria-pressed="${(x==='All'&&!sub)||x===sub}">${esc(x)}</button>`).join('')}
-  else{sb.hidden=true;sb.innerHTML=''}
-  grid.setAttribute('aria-labelledby','tab-'+tab);
-  const items=DATA[tab].filter(it=>(!cat||it.cat===cat)&&(!sub||it.sub===sub)&&(!term||[it.name,it.cat,it.sub||'',it.desc,...it.meta,...[].concat(...(it.menu||[]).map(g=>[g.g||'',...g.items.map(i=>i[0])]))].join(' ').toLowerCase().includes(term)));
-  grid.innerHTML=items.length?items.map(it=>cardHTML(it,tab)).join(''):`<div class="empty">Nothing matches${term?` "${esc(q.value.trim())}"`:''} here yet. If you run it, put it on the Board.</div>`;
-  $('status').textContent=items.length+(items.length===1?' listing':' listings')+' shown';
-}
-q.addEventListener('input',render);
-$('subs').addEventListener('click',e=>{const b=e.target.closest('[data-sub]');if(!b)return;sub=b.dataset.sub==='All'?null:b.dataset.sub;render();const n=$('subs').querySelector('[aria-pressed="true"]');if(n)n.focus()});
-$('search-form').addEventListener('submit',e=>{e.preventDefault();render();grid.scrollIntoView({behavior:'smooth',block:'start'})});
-grid.addEventListener('click',e=>{
-  const b=e.target.closest('[data-copy]');if(!b)return;
-  const v=b.dataset.copy;
-  const fallback=()=>{const r=document.createRange();r.selectNodeContents(b.previousElementSibling);const s=getSelection();s.removeAllRanges();s.addRange(r);say('Selected. Copy it from here')};
-  try{navigator.clipboard.writeText(v).then(()=>say('Copied '+v),fallback)}catch(_){fallback()}
-});
-
-/* ---------- register flow ---------- */
-const ov=$('overlay'),sheet=$('sheet'),stepEl=$('step'),bars=[...document.querySelectorAll('.progress i')];
-let st={},opener=null;
-const KINDS=[
-  {k:'services',t:'A student business',s:'Hair, nails, tutoring, repairs, food and more',i:ICONS.pound,bg:'var(--butter)'},
-  {k:'socs',t:'A society',s:'Sport, culture, faith, tech, arts and more',i:ICONS.users,bg:'var(--mint)'},
-  {k:'official',t:'An official notice',s:'For NTU and NTSU staff only',i:ICONS.bell,bg:'var(--sky)'}
-];
-const CATS={services:['Hair','Nails','Lashes','Tutoring','Repairs','Photography','Food','Other'],socs:['Culture','Sport','Tech','Arts','Faith','Academic','Other'],official:['NTU','NTSU']};
-
-function openSheet(e){
-  opener=e&&e.currentTarget||document.activeElement;
-  st={step:0,kind:null,name:'',cat:'',desc:'',meta:'',contact:'',agree:false,photos:[],pmsg:'',menu:'',policy:'',sub:'',avatar:''};
-  ov.hidden=false;document.body.style.overflow='hidden';draw();
-}
-function closeSheet(){ov.hidden=true;document.body.style.overflow='';if(opener&&opener.focus)opener.focus()}
-document.querySelectorAll('[data-open-register]').forEach(b=>b.addEventListener('click',openSheet));
-$('close').addEventListener('click',closeSheet);
-ov.addEventListener('click',e=>{if(e.target===ov)closeSheet()});
-document.addEventListener('keydown',e=>{
-  if(ov.hidden)return;
-  if(e.key==='Escape'){closeSheet();return}
-  if(e.key!=='Tab')return;
-  const f=[...sheet.querySelectorAll('button,input,select,textarea')].filter(el=>!el.disabled&&el.offsetParent!==null);
-  if(!f.length)return;
-  const a=f[0],z=f[f.length-1];
-  if(e.shiftKey&&document.activeElement===a){e.preventDefault();z.focus()}
-  else if(!e.shiftKey&&document.activeElement===z){e.preventDefault();a.focus()}
-});
-function subOpts(){return (SUBS[st.cat]||[]).concat(['Other']).map(c=>`<option ${st.sub===c?'selected':''}>${c}</option>`).join('')}
-function shrinkSquare(file,sz=256){
-  return new Promise((res,rej)=>{
-    const u=URL.createObjectURL(file),im=new Image();
-    im.onload=()=>{
-      const m=Math.min(im.width,im.height),c=document.createElement('canvas');c.width=c.height=sz;
-      c.getContext('2d').drawImage(im,(im.width-m)/2,(im.height-m)/2,m,m,0,0,sz,sz);
-      URL.revokeObjectURL(u);res(c.toDataURL('image/jpeg',.85));
-    };
-    im.onerror=()=>{URL.revokeObjectURL(u);rej()};im.src=u;
-  });
-}
-function parseMenu(t){
-  const items=t.split('\n').map(l=>l.trim()).filter(Boolean).slice(0,30).map(l=>{
-    const m=l.match(/^(.*?)\s*[-–:]\s*(£?\s*\d[\d.,]*.*)$/);
-    if(!m)return [l,''];
-    let pr=m[2].trim();if(/^\d/.test(pr))pr='£'+pr;return [m[1].trim()||l,pr];
-  });
-  return items.length?[{g:null,items}]:[];
-}
-function save(){for(const k of ['name','cat','sub','desc','meta','contact','menu','policy']){const el=$('r-'+k);if(el)st[k]=el.value}}
-
-function draw(){
-  bars.forEach((b,i)=>b.classList.toggle('on',i<=st.step));
-  const title=$('sheet-title');
-  if(st.step===0){
-    title.textContent='What are you registering?';
-    stepEl.innerHTML=`<div class="choices">${KINDS.map(k=>`<button class="choice" type="button" data-kind="${k.k}" aria-pressed="${st.kind===k.k}"><span class="ic" style="background:${k.bg}">${svg(k.i,22,2)}</span><span><strong>${k.t}</strong><span class="s">${k.s}</span></span></button>`).join('')}</div>
-      <div class="row-btns"><span></span><button class="btn pink" type="button" id="next0" ${st.kind?'':'disabled'}>Next</button></div>`;
-    stepEl.querySelectorAll('.choice').forEach(c=>c.addEventListener('click',()=>{st.kind=c.dataset.kind;draw();stepEl.querySelector(`[data-kind="${st.kind}"]`).focus()}));
-    $('next0').addEventListener('click',()=>{if(st.kind){st.step=1;draw()}});
-  }else if(st.step===1){
-    const soc=st.kind==='socs',off=st.kind==='official';
-    title.textContent=soc?'Tell us about your society':off?'Your notice':'Tell us about your business';
-    stepEl.innerHTML=`<form id="f" novalidate>
-      <div class="f"><label for="r-name">${soc?'Society name':off?'Notice title':'Business name'}</label><input type="text" id="r-name" value="${esc(st.name)}" placeholder="${soc?'e.g. NTU Chess Society':off?'e.g. Reading week library hours':'e.g. Lashes by Zara'}"></div>
-      <div class="f"><label for="r-cat">Category</label><select id="r-cat"><option value="">Choose one</option>${CATS[st.kind].map(c=>`<option ${st.cat===c?'selected':''}>${c}</option>`).join('')}</select></div>
-      ${st.kind==='services'?`<div class="f"><label for="r-sub">Type of service <span class="hint">what you do, e.g. Barbers or Braids</span></label><select id="r-sub"><option value="">Choose one</option>${subOpts()}</select></div>
-      <div class="f"><span class="lbl" id="av-l">Profile picture <span class="hint">optional, a logo or a face. You can add one later.</span></span>
-        <div class="avpick">${avatar({name:st.name||'You',cat:st.cat||'Other',avatar:st.avatar},64)}<label class="addph"><input type="file" id="r-avatar" accept="image/jpeg,image/png,image/webp" aria-describedby="av-l"><span>${st.avatar?'Change picture':'+ Add picture'}</span></label>${st.avatar?'<button class="link" type="button" id="av-rm">Remove</button>':''}</div></div>`:''}
-      <div class="f"><label for="r-desc">${soc?'What you get up to':off?'Details':'What you offer'} <span class="hint">(one or two lines)</span></label><textarea id="r-desc" maxlength="200">${esc(st.desc)}</textarea></div>
-      <div class="f"><label for="r-meta">${soc?'When and where you meet':off?'Where it applies':'Where and when'} <span class="hint">separate with commas</span></label><input type="text" id="r-meta" value="${esc(st.meta)}" placeholder="${soc?'Wed 6pm, Clifton':off?'All campuses':'City campus, evenings'}"></div>
-      ${st.kind==='services'?`<div class="f"><label for="r-menu">Price list <span class="hint">one per line, like Fade - £25</span></label><textarea id="r-menu" placeholder="Fade - £25&#10;Lineup - £15">${esc(st.menu)}</textarea></div><div class="f"><label for="r-policy">Policy <span class="hint">optional, e.g. late or cancellation rules</span></label><input type="text" id="r-policy" value="${esc(st.policy)}" placeholder="Over 10 minutes late and a late fee applies"></div>`:''}
-      <div class="f"><label for="r-contact">${off?'Posted by':'How people reach you'} <span class="hint">${off?'your department':'Instagram, email or phone'}</span></label><input type="text" id="r-contact" value="${esc(st.contact)}" placeholder="${off?'NTSU Advice Centre':'@yourhandle'}"></div>
-      <div class="f"><span class="lbl" id="ph-l">Photos <span class="hint">optional, up to 4. Show your work.</span></span>
-        <label class="addph" ${st.photos.length>=MAXPH?'hidden':''}><input type="file" id="r-photos" accept="image/jpeg,image/png,image/webp,image/gif" multiple aria-describedby="ph-l"><span>+ Add photos</span></label>
-        <p class="hint" id="ph-m" role="status">${esc(st.pmsg)}</p>
-        <div class="photos">${st.photos.map((p,i)=>`<div class="ph"><img src="${p}" alt="Photo ${i+1}"><button type="button" data-rm="${i}" aria-label="Remove photo ${i+1}">&times;</button></div>`).join('')}</div>
-      </div>
-      <p class="err" id="err" role="alert" hidden></p>
-      <div class="row-btns"><button type="button" class="btn ghost" id="back">Back</button><button class="btn pink" type="submit">Preview</button></div>
-    </form>`;
-    if($('r-sub')){
-      $('r-cat').addEventListener('change',()=>{save();st.sub='';$('r-sub').innerHTML='<option value="">Choose one</option>'+subOpts();draw();$('r-cat').focus()});
-      $('r-avatar').addEventListener('change',async e=>{
-        const f=e.target.files[0];if(!f)return;save();
-        if(!/^image\/(jpeg|png|webp)$/.test(f.type)||f.size>15e6){st.pmsg='Profile picture must be a JPG, PNG or WebP under 15MB.';draw();return}
-        try{st.avatar=await shrinkSquare(f)}catch(_){st.pmsg='That picture could not be read.'}
-        draw();$('r-avatar').focus();
-      });
-      const rm=$('av-rm');if(rm)rm.addEventListener('click',()=>{save();st.avatar='';draw();$('r-avatar').focus()});
-    }
-    $('r-photos').addEventListener('change',async e=>{
-      save();const files=[...e.target.files];let msg='';
-      for(const f of files){
-        if(st.photos.length>=MAXPH){msg='Max '+MAXPH+' photos.';break}
-        if(!/^image\/(jpeg|png|webp|gif)$/.test(f.type)){msg='Only JPG, PNG, WebP or GIF images.';continue}
-        if(f.size>15e6){msg='One photo was over 15MB and was skipped.';continue}
-        try{st.photos.push(await shrink(f))}catch(_){msg='One photo could not be read.'}
-      }
-      st.pmsg=msg;draw();const n=$('r-photos');(n&&!n.closest('[hidden]')?n:stepEl.querySelector('.ph button')||$('r-name')).focus();
-    });
-    stepEl.querySelectorAll('[data-rm]').forEach(b=>b.addEventListener('click',()=>{save();st.photos.splice(+b.dataset.rm,1);st.pmsg='';draw();(stepEl.querySelector('.ph button')||$('r-photos')).focus()}));
-    $('back').addEventListener('click',()=>{save();st.step=0;draw()});
-    $('f').addEventListener('submit',e=>{
-      e.preventDefault();save();
-      const miss=[['name','a name'],['cat','a category'],['desc','a short description'],['contact',off?'who it’s from':'a way to contact you']].filter(([k])=>!st[k].trim()).map(x=>x[1]);
-      const er=$('err');
-      if(miss.length){er.textContent='Add '+miss.join(', ')+' to continue.';er.hidden=false;return}
-      st.step=2;draw();
-    });
-  }else if(st.step===2){
-    title.textContent='Here’s how it’ll look';
-    const item={name:st.name,cat:st.cat,desc:st.desc,meta:st.meta.split(',').map(s=>s.trim()).filter(Boolean),contact:st.contact,mine:true,sub:st.sub,avatar:st.avatar,reviews:[],policy:st.policy.trim(),menu:parseMenu(st.menu),photos:st.photos.slice(),id:'u'+Date.now()};
-    stepEl.innerHTML=`<div class="preview-label">Preview</div><div style="pointer-events:none">${cardHTML(item,st.kind)}</div>
-      <label class="check" for="r-agree"><input type="checkbox" id="r-agree" ${st.agree?'checked':''}>I confirm these are real contact details, I agree to the <a href="/rules.html" target="_blank">community rules</a>, and I understand the Board is a listings platform only. It doesn’t vet or endorse anyone’s product or service.</label>
-      <p class="err" id="err2" role="alert" hidden>Tick the box to post your listing.</p>
-      <div class="row-btns"><button class="btn ghost" type="button" id="back2">Edit</button><button class="btn pink" type="button" id="post">Post to the Board</button></div>`;
-    $('back2').addEventListener('click',()=>{st.step=1;draw()});
-    $('r-agree').addEventListener('change',e=>{st.agree=e.target.checked});
-    $('post').addEventListener('click',async()=>{
-      if(!st.agree){$('err2').hidden=false;return}
-      const btn=$('post');btn.disabled=true;btn.textContent='Posting…';
-      let row,table;
-      if(st.kind==='services'){
-        table='businesses';
-        row={name:st.name,what:st.sub||st.cat,price:fromPrice(item)||'',location:item.meta[0]||'',description:st.desc,contact:st.contact};
-      }else{
-        table='societies';
-        row={name:st.name,what:st.cat,meet:item.meta.join(', '),description:st.desc,contact:st.contact};
-      }
-      const res=await submitPost(table==='businesses'?'business':'society',row);
-      if(res.error){btn.disabled=false;btn.textContent='Post to the Board';$('err2').textContent=res.error;$('err2').hidden=false;return}
-      lastStatus=res.status;
-      await loadData();
-      tab=st.kind;cat=null;q.value='';render();
-      st.step=3;draw();
-    });
-  }else{
-    const held=lastStatus==='pending';
-    title.textContent=held?'Sent for a quick check':'You’re on the Board';
-    stepEl.innerHTML=`<div class="done"><div class="big-pin" aria-hidden="true"></div>
-      <p style="margin:0 0 6px;font-weight:700;font-size:18px">${esc(st.name)} ${held?'is waiting for approval.':'is pinned.'}</p>
-      <p style="margin:0;color:var(--muted)">${held?'Something in your listing needs a quick look from our team. Only you can see it until it’s approved.':'Your listing is now live and shown to every NTU student browsing the Board.'}</p>
-      <div class="row-btns" style="justify-content:center"><button class="btn" type="button" id="see">See my listing</button></div></div>`;
-    $('see').addEventListener('click',()=>{closeSheet();$('browse').scrollIntoView({behavior:'smooth'})});
-  }
-  title.focus({preventScroll:true});
-}
-
-/* ---------- business detail (menu, policy, reviews) ---------- */
-const dov=document.createElement('div');
-dov.className='overlay';dov.hidden=true;
-dov.innerHTML='<div class="sheet dsheet" role="dialog" aria-modal="true" aria-labelledby="dtitle"><div class="sheet-head"><h2 id="dtitle" tabindex="-1"></h2><button class="x" id="dclose" type="button" aria-label="Close"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div><div id="dbody"></div></div>';
-document.body.appendChild(dov);
-let dcur=null,dopen=null,revOpen=false;
-function menuHTML(it){
-  return (it.menu||[]).map(g=>`${g.g?`<h4>${esc(g.g)}</h4>`:''}${g.items.map(i=>`<div class="mrow"><span>${esc(i[0])}</span><i aria-hidden="true"></i><b>${esc(i[1])}</b></div>`).join('')}`).join('');
-}
-/* ---------- posting goes through the moderation checker (Edge Function submit-post) ---------- */
-async function submitPost(kind,row){
-  const {data,error}=await sb.functions.invoke('submit-post',{body:{kind,row}});
-  if(error){let m='Something went wrong. Try again.';try{const j=await error.context.json();if(j&&j.error)m=j.error}catch(_){}return {error:m}}
-  return {status:data&&data.status};
-}
-let lastStatus='live';
-/* ---------- reviews (saved in Supabase) ---------- */
-let rvStars=0;
-const COMPLETED=new Set(); /* used only by the demo messages */
-const ranked=()=>DATA.services.slice().sort((x,y)=>{const n=(y.reviews.length?1:0)-(x.reviews.length?1:0);if(n)return n;return avg(y)-avg(x)||y.reviews.length-x.reviews.length||x.name.localeCompare(y.name)});
-function reviewBox(it){
-  const mine=USER&&(it.reviews||[]).find(r=>r.mine&&r.uid===USER.id);
-  if(mine)return `<div class="rvlock" role="status"><b>Thanks, you've reviewed this business.</b> Each person can leave one review per business.<br><button class="link" type="button" id="rv-del" data-rid="${esc(mine.id)}">Delete my review</button></div>`;
-  if(!USER)return `<div class="rvlock"><b>Log in to leave a review.</b> Any signed-in user can review a business.<br><button class="btn pink sm" type="button" data-auth="in" style="margin-top:10px">Log in or sign up</button></div>`;
-  return `<form class="rvform" id="rvf" novalidate>
-      <p style="margin:0 0 8px;font-weight:700">${rvStars?`You picked ${rvStars} star${rvStars>1?'s':''}`:'How many stars would you give?'}</p>
-      <div class="rvpick" role="radiogroup" aria-label="Star rating">${[1,2,3,4,5].map(i=>`<button type="button" class="rvstar" role="radio" aria-checked="${i===rvStars}" aria-label="${i} star${i>1?'s':''}" data-star="${i}"><svg width="34" height="34" viewBox="0 0 24 24" fill="${i<=rvStars?'currentColor':'none'}" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="${ICONS.star}"/></svg></button>`).join('')}</div>
-      ${rvStars?`<div class="f" style="margin-top:14px"><label for="rv-t">Why ${rvStars} star${rvStars>1?'s':''}?</label><textarea id="rv-t" maxlength="500" placeholder="Tell other students what it was like"></textarea></div>
-      <p class="err" id="rv-e" role="alert" hidden></p>
-      <button class="btn pink" type="submit" id="rv-go">Post review</button>`:''}
-    </form>`;
-}
-const HLM={'Late fees':{i:'pound',c:'#FFD84D'},'Late policy':{i:'bell',c:'#FF6A9C'},'Hair policies':{i:'scissors',c:'#B9A8FF'}};
-function hlList(it){
-  const out=[];
-  (it.sections||[]).forEach(x=>{
-    const m=HLM[x.t]||{i:'star',c:'#6EE0BE'},n=(x.items||[]).length;
-    const slides=x.k==='fees'
-      ?[`<p class="st-k">${esc(x.t)}</p><h3 class="st-h">Running late?</h3>${x.rows.map(r=>`<div class="st-row"><span>${esc(r[0])}</span><b>${esc(r[1])}</b></div>`).join('')}`]
-      :x.items.map((t,i)=>`<p class="st-k">${esc(x.t)} · ${i+1}/${n}</p><p class="st-t">${esc(t)}</p>`);
-    out.push({t:x.t,i:m.i,c:m.c,slides});
-  });
-  if(it.policy)out.push({t:'Policy',i:'star',c:'#6EE0BE',slides:[`<p class="st-k">Policy</p><p class="st-t">${esc(it.policy)}</p>`]});
-  return out;
-}
-function drawDetail(){
-  const it=dcur,n=(it.reviews||[]).length;
-  $('dtitle').textContent=it.name;
-  $('dbody').innerHTML=`<div class="dprof">${avatar(it,84)}<div><span class="svc">${esc(it.sub||it.cat)}</span><p class="dsub">${esc(it.cat)} service</p>
-    <div class="rate" style="margin-top:6px">${n?`${stars(avg(it),16)}<span>${avg(it).toFixed(1)} from ${n} review${n>1?'s':''}</span>`:'<span>No reviews yet</span>'}</div>
-    <button class="btn pink sm" type="button" data-dm="${esc(it.id)}" style="margin-top:10px">Message ${esc(it.name)}</button></div></div>
-    <p style="margin:12px 0 0">${esc(it.desc)}</p>
-    <div class="meta" style="margin-top:10px">${it.meta.map(m=>`<span>${esc(m)}</span>`).join('')}</div>
-    ${(it.photos||[]).length?`<div class="dphotos">${it.photos.map((p,i)=>`<button type="button" data-p="${i}" aria-label="View photo ${i+1}"><img src="${p}" alt=""></button>`).join('')}</div>`:''}
-    ${(it.menu||[]).some(g=>g.items.length)?`<div class="dsec"><h3>Menu and prices</h3>${menuHTML(it)}</div>`:''}
-    ${hlList(it).length?`<div class="dsec"><h3>Highlights</h3><div class="hls" role="group" aria-label="Policies and fees. Opens full screen.">${hlList(it).map((h,i)=>`<button class="hlb" type="button" data-hl="${i}" aria-haspopup="dialog"><span class="ring"><span class="in" style="background:${h.c}">${svg(ICONS[h.i],26,2)}</span></span><span>${esc(h.t)}</span></button>`).join('')}</div></div>`:''}
-    <div class="dsec"><h3>Contact</h3><div class="contact" style="border:0;padding:0"><code>${esc(it.contact)}</code><button class="copy" type="button" data-copy="${esc(it.contact)}">Copy</button></div><button class="link rep" type="button" data-report="business" data-rid="${esc(it.id)}">Report this listing</button></div>
-    <div class="dsec acc"><button class="acc-h" type="button" id="rev-t" aria-expanded="${revOpen}" aria-controls="rev-p"><span class="acc-n">Reviews</span><span class="acc-s">${n?`${stars(avg(it),14)} ${avg(it).toFixed(1)} (${n})`:'No reviews yet'}</span><svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
-      <div class="acc-p" id="rev-p" ${revOpen?'':'hidden'}>
-        ${n?`<div class="bars" aria-label="Rating breakdown">${[5,4,3,2,1].map(k=>{const c=it.reviews.filter(r=>r.s===k).length;return `<div class="rbar"><span>${k}</span><i><b style="width:${Math.round(c/n*100)}%"></b></i><em>${c}</em></div>`}).join('')}</div>`:''}
-        ${n?it.reviews.map(r=>`<div class="rv">${stars(r.s)}<p>${esc(r.t)}</p><small>${esc(r.w)}${r.x?' · '+esc(r.x):''}${USER&&r.uid===USER.id?(r.status==='pending'?' · Your review · Waiting for approval':' · Your review'):''}</small>${USER&&r.uid!==USER.id?`<button class="link rep" type="button" data-report="review" data-rid="${esc(r.id)}">Report</button>`:''}</div>`).join(''):'<p style="color:var(--muted);margin:10px 0 0">Be the first to leave a review.</p>'}
-        ${reviewBox(it)}
-      </div></div>`;
-  $('dbody').querySelectorAll('[data-star]').forEach(x=>x.addEventListener('click',()=>{rvStars=+x.dataset.star;revOpen=true;drawDetail();const t=$('rv-t');if(t)t.focus()}));
-  const del=$('rv-del');
-  if(del)del.addEventListener('click',async()=>{
-    if(!confirm('Delete your review?'))return;
-    const {error}=await sb.from('reviews').delete().eq('id',del.dataset.rid);
-    if(error){say('Could not delete. Try again.');return}
-    const id=dcur.id;await loadData();dcur=DATA.services.find(x=>x.id===id)||dcur;revOpen=true;render();paintMarquee();drawDetail();say('Review deleted');
-  });
-  if($('rvf'))$('rvf').addEventListener('submit',async e=>{
-    e.preventDefault();
-    const t=($('rv-t')||{value:''}).value.trim(),er=$('rv-e');
-    if(!rvStars||!t){er.textContent='Tell us why you picked '+rvStars+' star'+(rvStars>1?'s':'')+'.';er.hidden=false;return}
-    const go=$('rv-go');go.disabled=true;go.textContent='Posting…';
-    const res=await submitPost('review',{business_id:dcur.id,stars:rvStars,body:t,reviewer_name:USER.name});
-    if(res.error){go.disabled=false;go.textContent='Post review';er.textContent=res.error;er.hidden=false;return}
-    const id=dcur.id;rvStars=0;await loadData();dcur=DATA.services.find(x=>x.id===id)||dcur;
-    revOpen=true;render();paintMarquee();drawDetail();$('rev-t').focus();say(res.status==='pending'?'Thanks. Your review will show once our team has checked it':'Review posted');
-  });
-}
-function openDetail(id,btn){
-  const it=DATA.services.find(x=>String(x.id)===String(id));if(!it)return;
-  dcur=it;dopen=id;revOpen=false;rvStars=0;drawDetail();dov.hidden=false;document.body.style.overflow='hidden';$('dtitle').focus();
-  dov.querySelector('.sheet').scrollTop=0;
-}
-function closeDetail(){
-  dov.hidden=true;document.body.style.overflow='';
-  const b=document.querySelector(`[data-detail="${dopen}"]`);if(b)b.focus();
-}
-$('dclose').addEventListener('click',closeDetail);
-dov.addEventListener('click',e=>{if(e.target===dov)closeDetail();const rt=e.target.closest('#rev-t');if(rt){revOpen=!revOpen;rt.setAttribute('aria-expanded',revOpen);$('rev-p').hidden=!revOpen;if(revOpen)$('rev-p').scrollIntoView({block:'nearest',behavior:'smooth'});return}const au=e.target.closest('[data-auth]');if(au){openAuth('up',()=>{if(!dov.hidden)drawDetail()},au);return}const dm=e.target.closest('[data-dm]');if(dm){startDM(dm.dataset.dm,dm);return}const c=e.target.closest('[data-copy]');if(c){const v=c.dataset.copy;try{navigator.clipboard.writeText(v).then(()=>say('Copied '+v),()=>say('Select and copy it'))}catch(_){say('Select and copy it')}}const pb=e.target.closest('[data-p]');if(pb)lbOpen(dcur.photos,pb)});
-document.addEventListener('keydown',e=>{
-  if(dov.hidden||!lb.hidden||!sv.hidden||!mov.hidden||!aov.hidden)return;
-  if(e.key==='Escape'){closeDetail();return}
-  if(e.key!=='Tab')return;
-  const f=[...dov.querySelectorAll('button,input,select,textarea')].filter(el=>!el.disabled&&el.offsetParent!==null);
-  if(!f.length)return;
-  const a=f[0],z=f[f.length-1];
-  if(e.shiftKey&&(document.activeElement===a||document.activeElement===$('dtitle'))){e.preventDefault();z.focus()}
-  else if(!e.shiftKey&&document.activeElement===z){e.preventDefault();a.focus()}
-});
-grid.addEventListener('click',e=>{const b=e.target.closest('[data-detail]');if(b)openDetail(b.dataset.detail,b)});
-
-/* ---------- photos ---------- */
-const MAXPH=4;
-function shrink(file){
-  return new Promise((res,rej)=>{
-    const u=URL.createObjectURL(file),im=new Image();
-    im.onload=()=>{
-      const m=1000,r=Math.min(1,m/Math.max(im.width,im.height)),c=document.createElement('canvas');
-      c.width=Math.round(im.width*r);c.height=Math.round(im.height*r);
-      c.getContext('2d').drawImage(im,0,0,c.width,c.height);
-      URL.revokeObjectURL(u);res(c.toDataURL('image/jpeg',.82));
-    };
-    im.onerror=()=>{URL.revokeObjectURL(u);rej()};
-    im.src=u;
-  });
-}
-let lbList=[],lbI=0,lbOpener=null;
-const lb=document.createElement('div');
-lb.id='lb';lb.hidden=true;lb.setAttribute('role','dialog');lb.setAttribute('aria-modal','true');lb.setAttribute('aria-label','Photos');
-lb.innerHTML='<button class="lbb" id="lb-x" type="button" aria-label="Close photos">&times;</button><button class="lbb" id="lb-p" type="button" aria-label="Previous photo">&#8249;</button><img id="lb-i" alt=""><button class="lbb" id="lb-n" type="button" aria-label="Next photo">&#8250;</button><div id="lb-c" aria-live="polite"></div>';
-document.body.appendChild(lb);
-function lbShow(){const i=$('lb-i');i.src=lbList[lbI];i.alt='Photo '+(lbI+1)+' of '+lbList.length;$('lb-c').textContent=(lbI+1)+' / '+lbList.length;const m=lbList.length<2;$('lb-p').hidden=m;$('lb-n').hidden=m}
-function lbOpen(list,btn){lbList=list;lbI=0;lbOpener=btn;lb.hidden=false;lbShow();$('lb-x').focus()}
-function lbClose(){lb.hidden=true;if(lbOpener&&lbOpener.focus)lbOpener.focus()}
-$('lb-x').addEventListener('click',lbClose);
-$('lb-p').addEventListener('click',()=>{lbI=(lbI+lbList.length-1)%lbList.length;lbShow()});
-$('lb-n').addEventListener('click',()=>{lbI=(lbI+1)%lbList.length;lbShow()});
-lb.addEventListener('click',e=>{if(e.target===lb)lbClose()});
-document.addEventListener('keydown',e=>{
-  if(lb.hidden)return;
-  if(e.key==='Escape'){e.stopImmediatePropagation();lbClose()}
-  else if(e.key==='ArrowLeft'&&lbList.length>1)$('lb-p').click();
-  else if(e.key==='ArrowRight'&&lbList.length>1)$('lb-n').click();
-  else if(e.key==='Tab'){e.preventDefault();e.stopImmediatePropagation();$('lb-x').focus()}
-},true);
-grid.addEventListener('click',e=>{
-  const b=e.target.closest('.shot');if(!b)return;
-  const it=DATA[tab].find(x=>String(x.id)===b.dataset.lb);
-  if(it&&it.photos)lbOpen(it.photos,b);
-});
-
-/* ---------- highlights viewer (full screen, story style) ---------- */
-const sv=document.createElement('div');
-sv.id='story';sv.hidden=true;sv.setAttribute('role','dialog');sv.setAttribute('aria-modal','true');sv.setAttribute('aria-label','Highlight');
-sv.innerHTML='<button class="st-arrow" id="st-p" type="button" aria-label="Previous">&#8249;</button><div class="st-card" id="st-card"><div class="st-bars" id="st-bars"></div><div class="st-top"><span id="st-av"></span><div class="st-who"><b id="st-who"></b><small id="st-what"></small></div><button class="st-x" id="st-x" type="button" aria-label="Close highlight">&times;</button></div><div class="st-body" id="st-body" aria-live="polite"></div><button class="st-zone st-l" id="st-pz" type="button" aria-label="Previous slide" tabindex="-1"></button><button class="st-zone st-r" id="st-nz" type="button" aria-label="Next slide" tabindex="-1"></button></div><button class="st-arrow" id="st-n" type="button" aria-label="Next">&#8250;</button>';
-document.body.appendChild(sv);
-let stIt=null,stHs=[],stH=0,stS=0,stOpener=null;
-function stDraw(){
-  const h=stHs[stH];
-  $('st-card').style.background=h.c;
-  $('st-bars').innerHTML=h.slides.map((_,i)=>`<i class="${i<stS?'done':i===stS?'cur':''}"></i>`).join('');
-  $('st-av').innerHTML=avatar(stIt,36);
-  $('st-who').textContent=stIt.name;
-  $('st-what').textContent=h.t+' · '+(stS+1)+' of '+h.slides.length;
-  const b=$('st-body');b.innerHTML=`<div class="st-slide">${h.slides[stS]}</div>`;
-  sv.setAttribute('aria-label',h.t+' from '+stIt.name);
-}
-function stNext(){const h=stHs[stH];if(stS<h.slides.length-1)stS++;else if(stH<stHs.length-1){stH++;stS=0}else{stClose();return}stDraw()}
-function stPrev(){if(stS>0)stS--;else if(stH>0){stH--;stS=0}stDraw()}
-function openStory(i,btn){stIt=dcur;stHs=hlList(dcur);stH=i;stS=0;stOpener=btn;sv.hidden=false;stDraw();$('st-x').focus()}
-function stClose(){sv.hidden=true;if(stOpener&&stOpener.isConnected)stOpener.focus()}
-$('st-x').addEventListener('click',stClose);
-$('st-nz').addEventListener('click',stNext);$('st-pz').addEventListener('click',stPrev);
-$('st-n').addEventListener('click',stNext);$('st-p').addEventListener('click',stPrev);
-sv.addEventListener('click',e=>{if(e.target===sv)stClose()});
-let sx=null;
-$('st-card').addEventListener('touchstart',e=>{sx=e.touches[0].clientX},{passive:true});
-$('st-card').addEventListener('touchend',e=>{if(sx===null)return;const d=e.changedTouches[0].clientX-sx;sx=null;if(Math.abs(d)>60){d<0?stNext():stPrev()}});
-document.addEventListener('keydown',e=>{
-  if(sv.hidden)return;
-  if(e.key==='Escape'){e.stopImmediatePropagation();stClose()}
-  else if(e.key==='ArrowRight'){e.stopImmediatePropagation();stNext()}
-  else if(e.key==='ArrowLeft'){e.stopImmediatePropagation();stPrev()}
-  else if(e.key==='Tab'){
-    e.stopImmediatePropagation();
-    const f=[$('st-p'),$('st-x'),$('st-n')].filter(x=>x.offsetParent!==null);
-    const i=f.indexOf(document.activeElement);e.preventDefault();
-    f[(i+(e.shiftKey?f.length-1:1))%f.length].focus();
-  }
-},true);
-dov.addEventListener('click',e=>{const h=e.target.closest('[data-hl]');if(h)openStory(+h.dataset.hl,h)});
-
-/* ---------- messages: DMs between students and business owners (demo, in memory) ---------- */
-const bizId=n=>(DATA.services.find(x=>x.name===n)||{}).id;
-const clock=()=>new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
-const THREADS=[
-  {id:'t1',biz:bizId('Fade Theory'),who:'You',su:1,bu:0,msgs:[{f:'s',t:'Hi, do you have a slot this Saturday for a fade?',at:'Mon 18:02'},{f:'b',t:'Hey! Yes, 2pm or 4:30pm. Which suits you?',at:'Mon 18:20'}]},
-  {id:'t2',biz:bizId('Fade Theory'),who:'Maya Q.',su:0,bu:1,msgs:[{f:'s',t:'Do you do fades on longer hair? Booking for my brother.',at:'Today 09:14'}]},
-  {id:'t3',biz:bizId('Fade Theory'),who:'Jaden M.',su:0,bu:0,msgs:[{f:'s',t:'Can I move my appointment to Sunday?',at:'Yesterday 20:40'},{f:'b',t:'Sunday 1pm works. See you then.',at:'Yesterday 21:02'}]}
-];
-let mmode='s',mcur=null,mown=bizId('Fade Theory'),mOpener=null;
-const mov=document.createElement('div');
-mov.className='overlay';mov.hidden=true;mov.style.zIndex=60;
-mov.innerHTML='<div class="sheet msheet" id="msheet" role="dialog" aria-modal="true" aria-label="Messages"></div>';
-document.body.appendChild(mov);
-const bizOf=id=>DATA.services.find(x=>x.id===id)||{name:'Business',cat:'Other'};
-const mList=()=>THREADS.filter(t=>mmode==='s'?t.who==='You':t.biz===mown);
-function badge(){
-  const n=USER?THREADS.filter(t=>t.who==='You').reduce((a,t)=>a+t.su,0):0,b=$('msg-badge');
-  b.hidden=!n;b.textContent=n;
-  $('open-msg').setAttribute('aria-label','Messages'+(n?`, ${n} unread`:''));
-}
-function drawMsg(){
-  const sh=$('msheet'),keep=$('m-in')?$('m-in').value:'',hadFocus=document.activeElement&&document.activeElement.id==='m-in';
-  const list=mList(),cur=THREADS.find(t=>t.id===mcur&&list.includes(t));
-  if(!cur)mcur=null;
-  const other=t=>mmode==='s'?{name:bizOf(t.biz).name,cat:bizOf(t.biz).cat}:{name:t.who,cat:'Other'};
-  const unread=t=>mmode==='s'?t.su:t.bu;
-  sh.classList.toggle('chatting',!!cur);
-  const listHTML=`<div class="mlist"><div class="mhead"><h2 id="m-title" tabindex="-1">Messages</h2><button class="x" id="m-x" type="button" aria-label="Close messages"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
-    <div class="mtog" role="group" aria-label="View as"><button type="button" data-mode="s" aria-pressed="${mmode==='s'}">Student</button><button type="button" data-mode="b" aria-pressed="${mmode==='b'}">Business owner</button></div>
-    ${mmode==='b'?`<div class="f" style="margin:10px 0 0"><label for="m-own">You run <span class="hint">demo</span></label><select id="m-own">${DATA.services.map(x=>`<option value="${esc(x.id)}" ${x.id===mown?'selected':''}>${esc(x.name)}</option>`).join('')}</select></div>`:''}
-    <div class="mths">${list.length?list.map(t=>{const o=other(t),l=t.msgs[t.msgs.length-1],u=unread(t);return `<button class="mth" type="button" data-th="${t.id}" aria-current="${t.id===mcur}"><span>${avatar({name:o.name,cat:o.cat},40)}</span><span class="mt"><b>${esc(o.name)}</b><small>${l?esc((l.f==='sys'?'':l.f===(mmode==='s'?'s':'b')?'You: ':'')+l.t):'No messages yet'}</small></span>${u?`<i class="udot" aria-label="${u} unread"></i>`:''}</button>`}).join(''):'<p class="mempty">No conversations yet. Open a business and press Message.</p>'}</div></div>`;
-  let chat;
-  if(!cur)chat='<div class="mchat"><div class="mnone">Pick a conversation, or open a business and press Message to start one.</div></div>';
-  else{
-    const o=other(cur),me=mmode==='s'?'s':'b',done=COMPLETED.has(cur.biz)&&cur.who==='You'||cur.done;
-    chat=`<div class="mchat"><div class="mchead"><button class="x mback" id="m-back" type="button" aria-label="Back to conversations">&#8249;</button>${avatar({name:o.name,cat:o.cat},40)}<div class="mwho"><b>${esc(o.name)}</b><small>${mmode==='s'?esc(bizOf(cur.biz).sub||bizOf(cur.biz).cat):'Student client'}</small></div>
-      ${mmode==='s'?`<button class="btn sm ghost" type="button" id="m-prof">Profile</button>`:`<button class="btn sm" type="button" id="m-done" ${done?'disabled':''}>${done?'Appointment complete':'Mark appointment complete'}</button>`}
-      <button class="link" type="button" id="m-rep">Report</button></div>
-      <div class="mmsgs" id="m-log" role="log" aria-live="polite" aria-label="Conversation with ${esc(o.name)}">${cur.msgs.length?cur.msgs.map(m=>m.f==='sys'?`<div class="msys">${esc(m.t)}</div>`:`<div class="mb ${m.f===me?'me':'them'}"><span>${esc(m.t)}</span><small>${esc(m.at)}${m.demo?' · Demo reply':''}</small></div>`).join(''):'<div class="msys">Say hello. Ask about prices, availability or booking.</div>'}</div>
-      ${mmode==='s'?`<div class="mq">${['Are you free this week?','What is your price for this?','Can I reschedule?'].map(q=>`<button type="button" class="chipbtn" data-q="${esc(q)}">${esc(q)}</button>`).join('')}</div>`:''}
-      <form class="mform" id="m-form"><label class="sr" for="m-in">Message</label><input type="text" id="m-in" maxlength="500" autocomplete="off" placeholder="Write a message"><button class="btn pink" type="submit">Send</button></form>
-      <p class="hint mnote">Keep chats on the Board. Never share card or bank details. Demo only: messages are not sent anywhere.</p></div>`;
-  }
-  sh.innerHTML=`<div class="mgrid">${listHTML}${chat}</div>`;
-  const mi=$('m-in');if(mi){mi.value=keep;if(hadFocus)mi.focus()}
-  const lg=$('m-log');if(lg)lg.scrollTop=lg.scrollHeight;
-  badge();
-}
-function openMsg(btn){mOpener=btn||document.activeElement;mov.hidden=false;document.body.style.overflow='hidden';drawMsg();(mcur&&$('m-in')?$('m-in'):$('m-title')).focus()}
-function closeMsg(){mov.hidden=true;if(dov.hidden)document.body.style.overflow='';if(mOpener&&mOpener.isConnected)mOpener.focus()}
-function startDM(id,btn){
-  if(!USER){openAuth('up',()=>startDM(id,btn),btn);return}
-  let t=THREADS.find(x=>x.who==='You'&&x.biz===id);
-  if(!t){t={id:'t'+Date.now(),biz:id,who:'You',su:0,bu:0,msgs:[]};THREADS.unshift(t)}
-  mmode='s';mcur=t.id;t.su=0;openMsg(btn);
-}
-function mSend(text){
-  const t=THREADS.find(x=>x.id===mcur);if(!t||!text.trim())return;
-  const fromB=mmode==='b';
-  t.msgs.push({f:fromB?'b':'s',t:text.trim(),at:clock()});
-  if(fromB){if(t.who==='You')t.su++}else t.bu++;
-  drawMsg();
-  if(!fromB){
-    const tid=t.id;
-    setTimeout(()=>{
-      const x=THREADS.find(y=>y.id===tid);if(!x)return;
-      x.msgs.push({f:'b',t:'Thanks for your message! I will get back to you shortly.',at:clock(),demo:true});
-      const viewing=!mov.hidden&&mmode==='s'&&mcur===tid;
-      if(viewing)x.su=0;else x.su++;
-      if(!mov.hidden)drawMsg();else badge();
-      say('New reply from '+bizOf(x.biz).name);
-    },1400);
-  }
-}
-$('open-msg').addEventListener('click',e=>{if(!USER){openAuth('up',()=>{mmode='s';mcur=null;openMsg($('open-msg'))},e.currentTarget);return}mmode='s';mcur=null;openMsg(e.currentTarget)});
-mov.addEventListener('click',e=>{
-  if(e.target===mov){closeMsg();return}
-  const t=e.target;
-  if(t.closest('#m-x')){closeMsg();return}
-  const th=t.closest('[data-th]');if(th){mcur=th.dataset.th;const x=THREADS.find(y=>y.id===mcur);if(mmode==='s')x.su=0;else x.bu=0;drawMsg();if($('m-in'))$('m-in').focus();return}
-  const md=t.closest('[data-mode]');if(md){mmode=md.dataset.mode;mcur=null;drawMsg();return}
-  if(t.closest('#m-back')){mcur=null;drawMsg();return}
-  const q=t.closest('[data-q]');if(q){$('m-in').value=q.dataset.q;$('m-in').focus();return}
-  if(t.closest('#m-rep')){say('Reported. In the real site this goes to the Board team.');return}
-  if(t.closest('#m-prof')){const id=THREADS.find(y=>y.id===mcur).biz;closeMsg();openDetail(id,null);return}
-  if(t.closest('#m-done')){
-    const x=THREADS.find(y=>y.id===mcur);x.done=true;
-    if(x.who==='You'){COMPLETED.add(x.biz);x.su++}
-    x.msgs.push({f:'sys',t:`${bizOf(x.biz).name} marked this appointment complete. ${x.who==='You'?'You':x.who} can now leave one review.`});
-    drawMsg();say('Appointment marked complete');return;
-  }
-});
-mov.addEventListener('change',e=>{if(e.target.id==='m-own'){mown=e.target.value;mcur=null;drawMsg();$('m-own').focus()}});
-mov.addEventListener('submit',e=>{e.preventDefault();if(e.target.id==='m-form'){const v=$('m-in').value;$('m-in').value='';mSend(v);$('m-in').focus()}});
-document.addEventListener('keydown',e=>{
-  if(mov.hidden||!sv.hidden||!lb.hidden||!aov.hidden)return;
-  if(e.key==='Escape'){e.stopImmediatePropagation();closeMsg();return}
-  if(e.key!=='Tab')return;
-  const f=[...mov.querySelectorAll('button,input,select,textarea')].filter(el=>!el.disabled&&el.offsetParent!==null);
-  if(!f.length)return;
-  const a=f[0],z=f[f.length-1];
-  if(e.shiftKey&&(document.activeElement===a||document.activeElement.id==='m-title')){e.preventDefault();z.focus()}
-  else if(!e.shiftKey&&document.activeElement===z){e.preventDefault();a.focus()}
-},true);
-
-/* ---------- accounts: real sign up, log in and profile with Supabase Auth ----------
-   Replaces the old demo accounts section (from "accounts: sign up and log in (demo"
-   down to and including the line "renderAuth();badge();").                           */
-let USER=null,afterAuth=null,aMode='up',aOpener=null,aEmail='';
-const NTU_EMAIL=/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-const XSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
-
-function userFrom(u){
-  if(!u)return null;
-  const m=u.user_metadata||{};
-  return {id:u.id,email:u.email,name:m.name||u.email.split('@')[0],type:m.type||'student',created:u.created_at};
-}
-function friendly(err){
-  const t=(err&&err.message)||'';
-  if(/invalid login/i.test(t))return 'That email or password is wrong.';
-  if(/expired|invalid.*(otp|token)|token.*(expired|invalid)/i.test(t))return 'That code is wrong or has expired. Ask for a new one.';
-  if(/rate limit|too many|security purposes/i.test(t))return 'Too many tries. Wait a minute, then try again.';
-  if(/weak|password should/i.test(t))return 'Pick a stronger password.';
-  return t||'Something went wrong. Try again.';
-}
-function renderAuth(){
-  $('auth-nav').innerHTML=USER
-    ?`<button class="navbtn me" type="button" data-auth="profile" aria-label="Your profile">${avatar({name:USER.name,cat:'Other'},28)}<span>Hi, ${esc(USER.name.split(' ')[0])}</span></button>`
-    :`<button class="navbtn" type="button" data-auth="in">Log in</button><button class="btn" type="button" data-auth="up">Sign up</button>`;
-  if(typeof addAdminBtn==='function')addAdminBtn();
-}
-
-/* ---- auth sheet: sign up, log in, email code, forgot password ---- */
-const aov=document.createElement('div');
-aov.className='overlay';aov.hidden=true;aov.style.zIndex=70;
-aov.innerHTML='<div class="sheet" id="asheet" role="dialog" aria-modal="true" aria-labelledby="a-title"></div>';
-document.body.appendChild(aov);
-const field=(id,label,type,extra)=>`<div class="f"><label for="${id}">${label}</label><input type="${type}" id="${id}" ${extra||''}></div>`;
-const codeField=()=>field('a-code','Code from the email','text','inputmode="numeric" autocomplete="one-time-code" maxlength="8"');
-
-function drawAuth(info){
-  const m=aMode,up=m==='up';
-  const titles={up:'Join the Board',in:'Welcome back',code:'Check your email',forgot:'Reset your password',reset:'Choose a new password'};
-  const labels={up:'Create account',in:'Log in',code:'Confirm email',forgot:'Send code',reset:'Save new password'};
-  let body='';
-  if(m==='up'||m==='in'){
-    body=`<div class="mtog" role="group" aria-label="Sign up or log in" style="margin:14px 0"><button type="button" data-am="up" aria-pressed="${up}">Sign up</button><button type="button" data-am="in" aria-pressed="${!up}">Log in</button></div>
-      ${up?field('a-name','Your name','text','autocomplete="name" maxlength="40"'):''}
-      ${field('a-email','Email','text',`inputmode="email" autocomplete="email" placeholder="you@example.com" value="${esc(aEmail)}"`)}
-      ${field('a-pw','Password'+(up?' <span class="hint">at least 8 characters</span>':''),'password',`autocomplete="${up?'new-password':'current-password'}"`)}
-      ${up?`<div class="f"><label for="a-type">I'm joining as</label><select id="a-type"><option value="student">A student looking for services</option><option value="business">A student running a business or society</option></select></div>
-      <label class="check" for="a-agree"><input type="checkbox" id="a-agree">I agree to the <a href="/rules.html" target="_blank">community rules</a> and understand the Board is a listings platform only, not an official NTU or NTSU service.</label>`
-      :`<button class="link" type="button" data-am="forgot">Forgot your password?</button>`}`;
-  }else if(m==='code'){
-    body=`<p>We sent a code to <b>${esc(aEmail)}</b>. Type it in to confirm this is your email.</p>${codeField()}<button class="link" type="button" id="a-resend">Send a new code</button>`;
-  }else if(m==='forgot'){
-    body=`<p>Enter your email and we'll send you a code to reset your password.</p>${field('a-email','Email','text',`inputmode="email" autocomplete="email" value="${esc(aEmail)}"`)}<button class="link" type="button" data-am="in">Back to log in</button>`;
-  }else{
-    body=`<p>We sent a code to <b>${esc(aEmail)}</b>.</p>${codeField()}${field('a-pw','New password <span class="hint">at least 8 characters</span>','password','autocomplete="new-password"')}<button class="link" type="button" id="a-resend">Send a new code</button>`;
-  }
-  $('asheet').innerHTML=`<div class="sheet-head"><h2 id="a-title" tabindex="-1">${titles[m]}</h2><button class="x" id="a-x" type="button" aria-label="Close">${XSVG}</button></div>
-    <form id="a-form" novalidate>${body}
-      <p class="hint" id="a-info" role="status" ${info?'':'hidden'}>${esc(info||'')}</p>
-      <p class="err" id="a-err" role="alert" hidden></p>
-      <div class="row-btns"><span></span><button class="btn pink" type="submit">${labels[m]}</button></div>
-    </form>`;
-  $('a-title').focus();
-}
-function openAuth(mode,cb,btn){
-  aMode=mode;afterAuth=cb||null;aOpener=btn||document.activeElement;
-  aov.hidden=false;document.body.style.overflow='hidden';drawAuth();
-}
-function closeAuth(){aov.hidden=true;if(dov.hidden&&mov.hidden&&ov.hidden)document.body.style.overflow='';if(aOpener&&aOpener.isConnected)aOpener.focus()}
-function aFail(msg,btn,label){const e=$('a-err');e.textContent=msg;e.hidden=false;if(btn){btn.disabled=false;btn.textContent=label}}
-
-async function finishAuth(isNew,msg){
-  const {data:{user}}=await sb.auth.getUser();
-  USER=userFrom(user);renderAuth();badge();
-  const cb=afterAuth;afterAuth=null;aOpener=$('auth-nav');
-  aov.hidden=true;if(dov.hidden&&mov.hidden)document.body.style.overflow='';
-  say(msg||(isNew?'Welcome to the Board, '+USER.name.split(' ')[0]:'Logged in'));
-  if(cb)cb();
-  else if(isNew&&USER.type==='business')openSheet({currentTarget:$('auth-nav')});
-}
-
-aov.addEventListener('submit',async e=>{
-  e.preventDefault();
-  const btn=e.target.querySelector('[type="submit"]'),label=btn.textContent,m=aMode;
-  const val=id=>$(id)?$(id).value.trim():'';
-  const email=val('a-email').toLowerCase(),pw=$('a-pw')?$('a-pw').value:'',code=val('a-code').replace(/\s/g,'');
-  const miss=[];
-  if(m==='up'&&!val('a-name'))miss.push('your name');
-  if((m==='up'||m==='in'||m==='forgot')&&!NTU_EMAIL.test(email))miss.push('a valid email address');
-  if((m==='up'||m==='reset')&&pw.length<8)miss.push('a password of at least 8 characters');
-  if(m==='in'&&!pw)miss.push('your password');
-  if((m==='code'||m==='reset')&&!/^\d{6,8}$/.test(code))miss.push('the code from the email');
-  if(m==='up'&&!$('a-agree').checked)miss.push('your agreement to continue');
-  if(miss.length){aFail('Add '+miss.join(', ')+'.');return}
-  btn.disabled=true;btn.textContent='One moment…';
-  try{
-    if(m==='up'){
-      const {data,error}=await sb.auth.signUp({email,password:pw,options:{data:{name:val('a-name'),type:$('a-type').value}}});
-      if(error)throw error;
-      aEmail=email;
-      if(data.user&&data.user.identities&&!data.user.identities.length){aMode='in';drawAuth('That email already has an account. Log in instead.');return}
-      if(data.session){await finishAuth(true);return}
-      aMode='code';drawAuth();
-    }else if(m==='in'){
-      const {error}=await sb.auth.signInWithPassword({email,password:pw});
-      if(error&&/not confirmed/i.test(error.message)){
-        aEmail=email;await sb.auth.resend({type:'signup',email});
-        aMode='code';drawAuth('Your email isn’t confirmed yet, so we’ve sent you a new code.');return;
-      }
-      if(error)throw error;
-      await finishAuth(false);
-    }else if(m==='code'){
-      const {error}=await sb.auth.verifyOtp({email:aEmail,token:code,type:'email'});
-      if(error)throw error;
-      await finishAuth(true);
-    }else if(m==='forgot'){
-      const {error}=await sb.auth.resetPasswordForEmail(email);
-      if(error)throw error;
-      aEmail=email;aMode='reset';drawAuth();
-    }else{
-      const v=await sb.auth.verifyOtp({email:aEmail,token:code,type:'recovery'});
-      if(v.error)throw v.error;
-      const u=await sb.auth.updateUser({password:pw});
-      if(u.error)throw u.error;
-      await finishAuth(false,'Password updated. You’re logged in.');
-    }
-  }catch(err){aFail(friendly(err),btn,label)}
-});
-aov.addEventListener('click',async e=>{
-  if(e.target===aov||e.target.closest('#a-x')){closeAuth();return}
-  const m=e.target.closest('[data-am]');
-  if(m){const em=$('a-email');if(em)aEmail=em.value.trim().toLowerCase();aMode=m.dataset.am;drawAuth();return}
-  if(e.target.closest('#a-resend')){
-    const r=aMode==='reset'?await sb.auth.resetPasswordForEmail(aEmail):await sb.auth.resend({type:'signup',email:aEmail});
-    if(r.error)aFail(friendly(r.error));
-    else{const i=$('a-info');i.textContent='New code sent. Check your inbox and spam folder.';i.hidden=false}
-  }
-});
-document.addEventListener('keydown',e=>{
-  if(aov.hidden)return;
-  if(e.key==='Escape'){e.stopImmediatePropagation();closeAuth();return}
-  if(e.key!=='Tab')return;
-  const f=[...aov.querySelectorAll('button,input,select,textarea')].filter(el=>!el.disabled&&el.offsetParent!==null);
-  if(!f.length)return;
-  const a=f[0],z=f[f.length-1];
-  if(e.shiftKey&&(document.activeElement===a||document.activeElement.id==='a-title')){e.preventDefault();z.focus()}
-  else if(!e.shiftKey&&document.activeElement===z){e.preventDefault();a.focus()}
-},true);
-
-/* ---- profile sheet: name, your listings, password, log out, delete account ---- */
-let pOpener=null;
-const pov=document.createElement('div');
-pov.className='overlay';pov.hidden=true;pov.style.zIndex=75;
-pov.innerHTML='<div class="sheet" id="psheet" role="dialog" aria-modal="true" aria-labelledby="p-title"></div>';
-document.body.appendChild(pov);
-
-function drawProfile(){
-  const u=USER;if(!u)return;
-  const since=new Date(u.created).toLocaleDateString('en-GB',{month:'long',year:'numeric'});
-  $('psheet').innerHTML=`<div class="sheet-head"><h2 id="p-title" tabindex="-1">Your profile</h2><button class="x" id="p-x" type="button" aria-label="Close">${XSVG}</button></div>
-    <div class="dprof">${avatar({name:u.name,cat:'Other'},72)}<div><b style="font-size:18px">${esc(u.name)}</b><p class="dsub">${esc(u.email)}</p><p class="hint" style="margin:4px 0 0">${u.type==='business'?'Runs a business or society':'Student'}, joined ${esc(since)}</p></div></div>
-    <form class="dsec" id="p-name-f" novalidate><h3>Your name</h3><div class="f"><label class="sr" for="p-name">Your name</label><input type="text" id="p-name" maxlength="40" value="${esc(u.name)}" autocomplete="name"></div><button class="btn sm" type="submit">Save name</button></form>
-    <div class="dsec"><h3>Your listings</h3><div id="p-list"><p class="hint">Loading your listings…</p></div></div>
-    <form class="dsec" id="p-pw-f" novalidate><h3>Change password</h3><div class="f"><label for="p-pw">New password <span class="hint">at least 8 characters</span></label><input type="password" id="p-pw" autocomplete="new-password"></div><button class="btn sm" type="submit">Update password</button></form>
-    <div class="dsec"><button class="btn ghost" type="button" id="p-out">Log out</button></div>
-    <div class="dsec rvlock"><h3>Delete account</h3><p style="margin:0 0 10px">This permanently deletes your account and every listing you’ve posted. It can’t be undone.</p><div class="f"><label for="p-del">Type DELETE to confirm</label><input type="text" id="p-del" autocomplete="off"></div><button class="btn pink sm" type="button" id="p-delbtn">Delete my account</button></div>
-    <p class="err" id="p-err" role="alert" hidden></p>`;
-  loadMyListings();
-}
-async function loadMyListings(){
-  const [b,s]=await Promise.all([
-    sb.from('businesses').select('id,name,what,created_at').eq('owner_id',USER.id).order('created_at',{ascending:false}),
-    sb.from('societies').select('id,name,what,created_at').eq('owner_id',USER.id).order('created_at',{ascending:false})
-  ]);
-  const rows=[...(b.data||[]).map(r=>({...r,t:'businesses',k:'Business'})),...(s.data||[]).map(r=>({...r,t:'societies',k:'Society'}))];
-  const el=$('p-list');if(!el)return;
-  el.innerHTML=rows.length
-    ?rows.map(r=>`<div class="mrow"><span><b>${esc(r.name)}</b><br><span class="hint">${r.k}, ${esc(r.what||'')}, posted ${new Date(r.created_at).toLocaleDateString('en-GB')}</span></span><i aria-hidden="true"></i><button class="link" type="button" data-del-t="${r.t}" data-del-id="${esc(r.id)}" data-del-n="${esc(r.name)}">Remove</button></div>`).join('')
-    :'<p class="hint">You haven’t posted anything yet.</p>';
-}
-function openProfile(btn){pOpener=btn;pov.hidden=false;document.body.style.overflow='hidden';drawProfile();$('p-title').focus()}
-function closeProfile(){pov.hidden=true;if(ov.hidden&&dov.hidden&&mov.hidden)document.body.style.overflow='';(pOpener&&pOpener.isConnected?pOpener:$('auth-nav').querySelector('button')).focus()}
-function pErr(m){const e=$('p-err');e.textContent=m;e.hidden=false;e.scrollIntoView({block:'nearest'})}
-
-pov.addEventListener('click',async e=>{
-  const t=e.target;
-  if(t===pov||t.closest('#p-x')){closeProfile();return}
-  if(t.closest('#p-out')){await sb.auth.signOut();closeProfile();say('Logged out');return}
-  const d=t.closest('[data-del-id]');
-  if(d){
-    if(!confirm(`Remove "${d.dataset.delN}" from the Board?`))return;
-    const {error}=await sb.from(d.dataset.delT).delete().eq('id',d.dataset.delId);
-    if(error){pErr(friendly(error));return}
-    await loadData();paintMarquee();render();loadMyListings();say('Listing removed');return;
-  }
-  const db=t.closest('#p-delbtn');
-  if(db){
-    if($('p-del').value.trim()!=='DELETE'){pErr('Type DELETE in the box to confirm.');return}
-    db.disabled=true;db.textContent='Deleting…';
-    const {error}=await sb.functions.invoke('delete-account',{method:'POST'});
-    if(error){db.disabled=false;db.textContent='Delete my account';pErr('Your account couldn’t be deleted. Try again.');return}
-    await sb.auth.signOut({scope:'local'});closeProfile();
-    await loadData();paintMarquee();render();say('Your account has been deleted');
-  }
-});
-pov.addEventListener('submit',async e=>{
-  e.preventDefault();
-  if(e.target.id==='p-name-f'){
-    const n=$('p-name').value.trim();if(!n){pErr('Your name can’t be empty.');return}
-    const {data,error}=await sb.auth.updateUser({data:{name:n}});
-    if(error){pErr(friendly(error));return}
-    USER=userFrom(data.user);renderAuth();drawProfile();$('p-title').focus();say('Name saved');
-  }else if(e.target.id==='p-pw-f'){
-    const pw=$('p-pw').value;if(pw.length<8){pErr('Use at least 8 characters.');return}
-    const {error}=await sb.auth.updateUser({password:pw});
-    if(error){pErr(friendly(error));return}
-    $('p-pw').value='';say('Password updated');
-  }
-});
-document.addEventListener('keydown',e=>{
-  if(pov.hidden||!aov.hidden)return;
-  if(e.key==='Escape'){e.stopImmediatePropagation();closeProfile();return}
-  if(e.key!=='Tab')return;
-  const f=[...pov.querySelectorAll('button,input,select,textarea')].filter(el=>!el.disabled&&el.offsetParent!==null);
-  if(!f.length)return;
-  const a=f[0],z=f[f.length-1];
-  if(e.shiftKey&&(document.activeElement===a||document.activeElement.id==='p-title')){e.preventDefault();z.focus()}
-  else if(!e.shiftKey&&document.activeElement===z){e.preventDefault();a.focus()}
-},true);
-
-/* ---- nav buttons ---- */
-$('auth-nav').addEventListener('click',e=>{
-  const b=e.target.closest('[data-auth]');if(!b)return;
-  if(b.dataset.auth==='profile'){openProfile(b);return}
-  openAuth(b.dataset.auth,null,b);
-});
-
-/* ---- you must be logged in to list a business or society ---- */
-document.querySelectorAll('[data-open-register]').forEach(b=>b.addEventListener('click',e=>{
-  if(USER)return;
-  e.stopImmediatePropagation();
-  openAuth('up',()=>openSheet({currentTarget:b}),b);
-},true));
-
-/* ---- keep the page in sync with the session (also restores login on reload) ---- */
-sb.auth.onAuthStateChange((ev,session)=>{
-  USER=userFrom(session&&session.user);
-  renderAuth();badge();setTimeout(checkAdmin,0);
-  if(!USER&&!pov.hidden)closeProfile();
-});
-renderAuth();badge();
-
-/* ---------- reporting ---------- */
-async function report(kind,id){
-  if(!USER){openAuth('in',null,document.activeElement);return}
-  const reason=prompt('What is wrong with this '+(kind==='review'?'review':'listing')+'?');
-  if(reason===null)return;
-  if(!reason.trim()){say('Add a reason to report');return}
-  const {error}=await sb.from('reports').insert({kind,target_id:String(id),reason:reason.trim().slice(0,300)});
-  if(error&&error.code==='23505'){say('You have already reported this');return}
-  say(error?'Could not send report. Try again.':'Thanks, our team will take a look');
-}
-document.addEventListener('click',e=>{const b=e.target.closest('[data-report]');if(b){e.preventDefault();report(b.dataset.report,b.dataset.rid)}});
-
-/* ---------- admin panel (only for emails in the admins table) ---------- */
-var IS_ADMIN=false,admOpener=null;
-async function checkAdmin(){
-  IS_ADMIN=false;
-  if(USER){const {data}=await sb.rpc('is_admin');IS_ADMIN=data===true}
-  addAdminBtn();
-}
-function addAdminBtn(){
-  const old=$('open-admin');if(old)old.remove();
-  if(IS_ADMIN&&USER){const b=document.createElement('button');b.className='navbtn adminbtn';b.type='button';b.id='open-admin';b.textContent='Admin';b.addEventListener('click',()=>openAdmin(b));$('auth-nav').prepend(b)}
-}
-const admov=document.createElement('div');
-admov.className='overlay';admov.hidden=true;admov.style.zIndex=65;
-admov.innerHTML='<div class="sheet dsheet" id="admsheet" role="dialog" aria-modal="true" aria-labelledby="adm-title"></div>';
-document.body.appendChild(admov);
-async function drawAdmin(){
-  const sh=$('admsheet');
-  sh.innerHTML='<div class="sheet-head"><h2 id="adm-title" tabindex="-1">Admin</h2><button class="x" id="adm-x" type="button" aria-label="Close">&times;</button></div><p class="hint">Loading…</p>';
-  const [b,so,r,rep]=await Promise.all([
-    sb.from('businesses').select('*').eq('status','pending'),
-    sb.from('societies').select('*').eq('status','pending'),
-    sb.from('reviews').select('*').eq('status','pending'),
-    sb.from('reports').select('*').order('created_at',{ascending:false})
-  ]);
-  const item=(kind,x,title,text)=>`<div class="adm"><b>${esc(title)}</b><p>${esc(text)}</p>${x.flag_reason?`<span class="why">${esc(x.flag_reason)}</span>`:''}<div class="acts"><button class="btn sm" type="button" data-approve="${kind}" data-id="${esc(x.id)}">Approve</button><button class="btn sm ghost" type="button" data-remove="${kind}" data-id="${esc(x.id)}">Remove</button></div></div>`;
-  const pend=[].concat(
-    (b.data||[]).map(x=>item('businesses',x,'Business: '+x.name,x.description)),
-    (so.data||[]).map(x=>item('societies',x,'Society: '+x.name,x.description)),
-    (r.data||[]).map(x=>item('reviews',x,'Review ('+x.stars+' stars) by '+(x.reviewer_name||'Student'),x.body)));
-  const tbl={business:'businesses',society:'societies',review:'reviews'};
-  const reps=(rep.data||[]).map(x=>`<div class="adm"><b>Report on a ${esc(x.kind)}</b><p>${esc(x.reason)}</p><span class="why">id ${esc(x.target_id)}</span><div class="acts"><button class="btn sm ghost" type="button" data-remove="${tbl[x.kind]}" data-id="${esc(x.target_id)}" data-rep="${esc(x.id)}">Remove the ${esc(x.kind)}</button><button class="btn sm" type="button" data-dismiss="${esc(x.id)}">Dismiss report</button></div></div>`);
-  sh.innerHTML=`<div class="sheet-head"><h2 id="adm-title" tabindex="-1">Admin</h2><button class="x" id="adm-x" type="button" aria-label="Close">&times;</button></div>
-    <div class="adm-sec"><h3>Waiting for approval (${pend.length})</h3>${pend.join('')||'<p class="hint">Nothing waiting.</p>'}</div>
-    <div class="adm-sec"><h3>Reports (${reps.length})</h3>${reps.join('')||'<p class="hint">No reports.</p>'}</div>`;
-}
-function openAdmin(btn){admOpener=btn;admov.hidden=false;document.body.style.overflow='hidden';drawAdmin().then(()=>$('adm-title').focus())}
-async function closeAdmin(){admov.hidden=true;document.body.style.overflow='';await loadData();paintMarquee();render();if(admOpener&&admOpener.isConnected)admOpener.focus()}
-admov.addEventListener('click',async e=>{
-  if(e.target===admov||e.target.closest('#adm-x')){closeAdmin();return}
-  const a=e.target.closest('[data-approve]'),r=e.target.closest('[data-remove]'),d=e.target.closest('[data-dismiss]');
-  if(a){const {error}=await sb.from(a.dataset.approve).update({status:'live',flag_reason:null}).eq('id',a.dataset.id);say(error?'Could not approve':'Approved');drawAdmin()}
-  else if(r){if(!confirm('Remove this for good?'))return;const {error}=await sb.from(r.dataset.remove).delete().eq('id',r.dataset.id);if(!error&&r.dataset.rep)await sb.from('reports').delete().eq('id',r.dataset.rep);say(error?'Could not remove':'Removed');drawAdmin()}
-  else if(d){await sb.from('reports').delete().eq('id',d.dataset.dismiss);say('Report dismissed');drawAdmin()}
-});
-document.addEventListener('keydown',e=>{if(!admov.hidden&&e.key==='Escape'){e.stopImmediatePropagation();closeAdmin()}},true);
-
-/* ---------- rankings: businesses ordered by their reviews ---------- */
-let rOpener=null;
-const rov=document.createElement('div');
-rov.className='overlay';rov.hidden=true;rov.style.zIndex=55;
-rov.innerHTML='<div class="sheet" id="rsheet" role="dialog" aria-modal="true" aria-labelledby="r-title"></div>';
-document.body.appendChild(rov);
-function drawRank(){
-  const list=ranked();
-  $('rsheet').innerHTML=`<div class="sheet-head"><h2 id="r-title" tabindex="-1">Top rated businesses</h2><button class="x" id="r-x" type="button" aria-label="Close"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
-    <p class="hint" style="margin:8px 0 0">Ranked by average star rating. Ties go to the business with more reviews.</p>
-    <div class="rklist">${list.length?list.map((it,i)=>{const n=it.reviews.length;return `<button class="rk ${i<3&&n?'top'+(i+1):''}" type="button" data-rank="${esc(it.id)}"><span class="no">${n?i+1:'–'}</span>${avatar(it,40)}<span class="rt"><b>${esc(it.name)}</b><small>${esc(it.sub||it.cat)}</small></span><span class="rate">${n?`${stars(avg(it))} ${avg(it).toFixed(1)} (${n})`:'No reviews yet'}</span></button>`}).join(''):'<p class="mempty">No businesses yet.</p>'}</div>`;
-}
-function openRank(btn){rOpener=btn||document.activeElement;rov.hidden=false;document.body.style.overflow='hidden';drawRank();$('r-title').focus()}
-function closeRank(){rov.hidden=true;document.body.style.overflow='';if(rOpener&&rOpener.isConnected)rOpener.focus()}
-$('open-rank').addEventListener('click',e=>openRank(e.currentTarget));
-rov.addEventListener('click',e=>{
-  if(e.target===rov||e.target.closest('#r-x')){closeRank();return}
-  const b=e.target.closest('[data-rank]');if(b){rov.hidden=true;openDetail(b.dataset.rank,b)}
-});
-document.addEventListener('keydown',e=>{if(!rov.hidden&&e.key==='Escape'){e.stopImmediatePropagation();closeRank()}},true);
-
-/* ---------- settings: light / dark / auto theme ---------- */
-const THEME_KEY='board-theme';
-function applyTheme(mode){
-  if(mode==='light'||mode==='dark')document.documentElement.setAttribute('data-theme',mode);
-  else document.documentElement.removeAttribute('data-theme');
-}
-function currentTheme(){try{return localStorage.getItem(THEME_KEY)||'auto'}catch(e){return 'auto'}}
-function setTheme(mode){
-  try{mode==='auto'?localStorage.removeItem(THEME_KEY):localStorage.setItem(THEME_KEY,mode)}catch(e){}
-  applyTheme(mode);drawSettings();
-}
-let sOpener=null;
-const sov=document.createElement('div');
-sov.className='overlay';sov.hidden=true;sov.style.zIndex=80;
-sov.innerHTML='<div class="sheet" id="ssheet" role="dialog" aria-modal="true" aria-labelledby="s-title"></div>';
-document.body.appendChild(sov);
-function drawSettings(){
-  const t=currentTheme();
-  $('ssheet').innerHTML=`<div class="sheet-head"><h2 id="s-title" tabindex="-1">Settings</h2><button class="x" id="s-x" type="button" aria-label="Close"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
-    <div class="f">
-      <label id="s-appearance-label">Appearance</label>
-      <div class="mtog tri" role="group" aria-labelledby="s-appearance-label">
-        <button type="button" data-theme-opt="light" aria-pressed="${t==='light'}">Light</button>
-        <button type="button" data-theme-opt="dark" aria-pressed="${t==='dark'}">Dark</button>
-        <button type="button" data-theme-opt="auto" aria-pressed="${t==='auto'}">Auto</button>
-      </div>
-      <p class="hint" style="margin-top:10px">Auto matches whatever your phone or browser is set to.</p>
-    </div>`;
-}
-function openSettings(btn){
-  sOpener=btn||document.activeElement;sov.hidden=false;document.body.style.overflow='hidden';drawSettings();$('s-title').focus();
-}
-function closeSettings(){sov.hidden=true;if(ov.hidden&&dov.hidden&&mov.hidden&&aov.hidden)document.body.style.overflow='';if(sOpener&&sOpener.isConnected)sOpener.focus()}
-sov.addEventListener('click',e=>{
-  if(e.target===sov||e.target.closest('#s-x')){closeSettings();return}
-  const b=e.target.closest('[data-theme-opt]');if(b)setTheme(b.dataset.themeOpt);
-});
-$('open-settings').addEventListener('click',e=>openSettings(e.currentTarget));
-document.addEventListener('keydown',e=>{
-  if(sov.hidden)return;
-  if(e.key==='Escape'){e.stopImmediatePropagation();closeSettings();return}
-  if(e.key!=='Tab')return;
-  const f=[...sov.querySelectorAll('button,input,select,textarea')].filter(el=>!el.disabled&&el.offsetParent!==null);
-  if(!f.length)return;
-  const a=f[0],z=f[f.length-1];
-  if(e.shiftKey&&(document.activeElement===a||document.activeElement.id==='s-title')){e.preventDefault();z.focus()}
-  else if(!e.shiftKey&&document.activeElement===z){e.preventDefault();a.focus()}
-},true);
-applyTheme(currentTheme());
-
-loadData().then(()=>{paintMarquee();render()});
-</script>
 </body>
 </html>

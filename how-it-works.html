@@ -6,104 +6,98 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
 <title>How it works | the Board</title>
-<meta name="description" content="How finding, messaging, reviewing and listing work on the Board.">
+<meta name="description" content="How finding, reviewing and listing work on the Board.">
 <link rel="preload" href="fonts/instrument-sans-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="css/styles.css">
 </head>
-<body data-page="how">
+<body>
 
-<header id="site-header"></header>
+<header class="bar sbar">
+  <div class="wrap">
+    <div class="pill">
+      <a class="logo" href="/"><span class="pin" aria-hidden="true"></span>the Board</a>
+      <a class="btn ghost" href="/#browse">Back to the Board</a>
+    </div>
+  </div>
+</header>
 
 <main id="top">
   <section class="wrap page-hero">
     <h1>How the Board works</h1>
-    <p>Find a student business, check what they charge and how they work, message them, then review them once your appointment is done. Running something yourself? List it for free.</p>
+    <p>Find a student business or society, check what they charge and how they work, then contact them directly. Running something yourself? List it for free.</p>
   </section>
 
   <section class="wrap paths" aria-label="Two ways to use the Board">
     <div class="path" id="students" style="background:var(--butter)">
       <h2>Looking for something</h2>
-      <p>Hair, nails, food, photography and more, all run by students.</p>
+      <p>Hair, nails, lashes, food, photography and more, all run by students.</p>
       <ol>
-        <li><span><b>Pick a category</b><span>Choose a category, then the type you need, like Barbers or Braids. Search and sort from there.</span></span></li>
-        <li><span><b>Check the profile</b><span>See prices, photos, reviews and how fast they usually reply. Tap the highlights for late fees and policies.</span></span></li>
-        <li><span><b>Message them</b><span>Pick what you want from their menu and it goes into a message with the total. Chats stay on the Board.</span></span></li>
-        <li><span><b>Review after your appointment</b><span>Once the business marks your appointment complete, you can leave one review.</span></span></li>
+        <li><span><b>Pick a category</b><span>Choose a category, then the type you need, like Barbers or Braids. Or just search.</span></span></li>
+        <li><span><b>Open the listing</b><span>Tap any card to see prices, photos, policies and reviews.</span></span></li>
+        <li><span><b>Contact them directly</b><span>Every listing shows how to reach the business, usually an Instagram handle, email or phone number. Bookings and payments happen between you and them.</span></span></li>
+        <li><span><b>Leave a review</b><span>Log in and leave one honest review per business, to help the next person.</span></span></li>
       </ol>
-      <a class="btn dark" href="index.html#browse">Browse the Board</a>
+      <a class="btn dark" href="/#browse">Browse the Board</a>
     </div>
     <div class="path" id="businesses" style="background:var(--mint)">
       <h2>Running something</h2>
       <p>A side hustle, a small business, or a society. Free to list, always.</p>
       <ol>
-        <li><span><b>Make a business account</b><span>Sign up and choose “a student running a business”, or switch from your student account in your dashboard.</span></span></li>
-        <li><span><b>Add your listing</b><span>Your menu and prices, policies, a profile picture, a cover picture and up to four photos of your work.</span></span></li>
-        <li><span><b>Reply to customers</b><span>Messages land in your inbox. Your average reply time shows on your profile, so quick replies help.</span></span></li>
-        <li><span><b>Mark appointments complete</b><span>Do it from the chat. It lets that customer leave you a review, and your dashboard keeps count.</span></span></li>
+        <li><span><b>Make a free account</b><span>Sign up with your email. We send you a code to confirm it’s really you.</span></span></li>
+        <li><span><b>Add your listing</b><span>What you offer, where and when, how to reach you, your price list and policies, a profile picture and up to four photos.</span></span></li>
+        <li><span><b>Go live</b><span>An automatic check reads every listing. Most go live straight away. Photos, and anything the check flags, wait for a quick look from our team, usually within a day. Until then only you can see it.</span></span></li>
+        <li><span><b>Keep it up to date</b><span>Remove a listing any time from your profile. To change one, remove it and post it again, or contact us.</span></span></li>
       </ol>
-      <button class="btn dark" type="button" data-open-register>List your business</button>
+      <a class="btn dark" href="/#list">List your business</a>
     </div>
   </section>
 
   <section class="wrap info">
     <div class="infobox" id="reviews">
-      <h2>Why you can trust the reviews</h2>
-      <p>Only students who have had an appointment can leave a review, and only one per business. The business marks the appointment complete, not the customer, so reviews come from real visits.</p>
+      <h2>How reviews work</h2>
+      <p>You need to be logged in to leave a review, and you can leave one per business. You can’t review your own business. Every review is checked automatically, and anyone can report a review that breaks the <a href="/rules.html">community rules</a>.</p>
     </div>
     <div class="infobox" id="featured">
       <h2>Featured and sponsored spots</h2>
-      <p>Businesses can pay to appear in the featured spots on the home page. They are always marked “Sponsored”, they only show when they match the category you picked, and they never change a business’s reviews or rating.</p>
+      <p>The spotlight on the home page shows <b>Featured</b> businesses, which are the best rated ones for the category you picked. If a business has paid to appear there it is always marked <b>Sponsored</b>. Paying never changes a business’s reviews, rating or position in search.</p>
     </div>
     <div class="infobox" id="safety">
       <h2>Staying safe</h2>
       <ul>
-        <li>Keep chats on the Board so there is a record.</li>
-        <li>Never send card or bank details in a message.</li>
-        <li>Use Report in any chat if something feels wrong.</li>
-        <li>We list businesses, we don't vet them. Check reviews and photos before you book.</li>
+        <li>We list businesses, we don’t vet them. Check reviews and photos before you book.</li>
+        <li>Be careful about paying in full up front to someone you haven’t used before.</li>
+        <li>Meet in public or on campus where you can.</li>
+        <li>Use Report on any listing or review if something feels wrong.</li>
       </ul>
     </div>
   </section>
 
   <section class="wrap faq" id="faq" aria-labelledby="faq-h">
     <h2 id="faq-h">Questions</h2>
-    <details><summary>Does it cost anything?</summary><p>No. Browsing, messaging and listing are all free.</p></details>
-    <details><summary>What does “Sponsored” mean?</summary><p>The business paid to be shown in a featured spot. Everything else on the Board, including search results, ratings and reviews, is the same for every business.</p></details>
-    <details><summary>Who can list?</summary><p>Any student running a business or a society. You need a business account to list.</p></details>
-    <details><summary>Is this run by a university?</summary><p>No. The Board is made by students. It is not an official university or students’ union service, and it is open to students from any university.</p></details>
-    <details><summary>Can I review a business I haven't used?</summary><p>No. Reviews unlock once the business marks your appointment complete, so every review comes from a real customer.</p></details>
-    <details><summary>Can I have a student account and a business?</summary><p>Yes. A business account can still message other businesses. Use “My enquiries” in Messages to see those chats.</p></details>
-    <details><summary>How do I change or remove my listing?</summary><p>Contact us using the details on our <a href="privacy.html#contact">privacy notice</a> for now. Editing from your dashboard is coming.</p></details>
-    <details><summary>How do I delete my account or get a copy of my data?</summary><p>Go to your profile and use “Your data”. You can download everything we hold about you, or delete your account.</p></details>
+    <details><summary>Does it cost anything?</summary><p>No. Browsing, reviewing and listing are all free.</p></details>
+    <details><summary>Can I message a business on the Board?</summary><p>Not yet. Use the contact details on their listing. You can copy them with one tap.</p></details>
+    <details><summary>What does “Sponsored” mean?</summary><p>The business paid to be shown in the spotlight. Everything else, including search results, ratings and reviews, is the same for every business.</p></details>
+    <details><summary>Who can list?</summary><p>Any student aged 16 or over running a business or a society. You need a free account.</p></details>
+    <details><summary>Is this run by a university?</summary><p>No. The Board is made by students and run by DAXSintech. It is not an official university or students’ union service.</p></details>
+    <details><summary>Why is my listing “waiting for approval”?</summary><p>Either the automatic check flagged something, or you added photos. Our team takes a quick look and approves it, usually within a day.</p></details>
+    <details><summary>How do I delete my account or get a copy of my data?</summary><p>Log in, open your profile and use “Delete account”. It removes your account and everything you’ve posted. For a copy of your data, email <a href="mailto:daxsintech@gmail.com">daxsintech@gmail.com</a>.</p></details>
   </section>
 
   <section class="wrap" aria-labelledby="join-h">
     <div class="banner">
       <div><h2 id="join-h">Got a business? List it.</h2><p>Three short steps. Free to list, always.</p></div>
-      <button class="btn dark" type="button" data-open-register>List your business</button>
+      <a class="btn dark" href="/#list">List your business</a>
     </div>
   </section>
 </main>
 
-<footer id="site-footer"></footer>
-<noscript><div class="wrap" style="padding-block:24px">The Board needs JavaScript.</div></noscript>
+<footer>
+  <div class="wrap">
+    <nav class="flinks" aria-label="About the Board"><a href="/how-it-works.html" aria-current="page">How it works</a><a href="/rules.html">Community rules</a><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a><a href="mailto:daxsintech@gmail.com">Contact us</a></nav>
+    <small>The Board is a listings platform only. We don't vet, endorse, or take responsibility for the quality of anyone's product or service. Not an official university or students’ union service. Run by DAXSintech, Nottingham.</small>
+    <div class="big" aria-hidden="true">the Board</div>
+  </div>
+</footer>
 
-<!-- Order matters: settings, demo backend (remove these two in production), API client, then the screens. -->
-<script src="js/config.js"></script>
-<script src="js/seed.js"></script>
-<script src="js/mock-backend.js"></script>
-<script src="js/api.js"></script>
-<script src="js/ui-core.js"></script>
-<script src="js/ui-shell.js"></script>
-<script src="js/ui-theme.js"></script>
-<script src="js/ui-auth.js"></script>
-<script src="js/ui-browse.js"></script>
-<script src="js/ui-register.js"></script>
-<script src="js/ui-detail.js"></script>
-<script src="js/ui-messages.js"></script>
-<script src="js/ui-dashboard.js"></script>
-<script src="js/ui-promo.js"></script>
-<script src="js/ui-profile.js"></script>
-<script src="js/main.js"></script>
 </body>
 </html>

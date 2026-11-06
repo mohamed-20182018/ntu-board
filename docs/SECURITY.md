@@ -1,55 +1,40 @@
-# Security (main branch)
+# Security: how the live site is protected
 
-The main branch is a static website. The home page reads listings from Supabase, and sends new ones to it, using Supabase's public ("publishable") key. That key is meant to be public, so **all protection lives in Supabase's Row Level Security rules**, set by `supabase/security.sql`. Accounts, messages and reviews on the other pages are a demo that is stored only in the visitor's browser.
+The site is static (Vercel / GitHub Pages). The home page talks to Supabase with the public ("publishable") key. That key is meant to be public, so **all protection lives in Supabase**: the Row Level Security rules in `supabase/security.sql`, the `submit-post` and `delete-account` Edge Functions, and Supabase Auth.
 
-## What is in place
-
-| Area | How |
+| Area | What protects it |
 |---|---|
-| Database rules | `supabase/security.sql`: the public can read **approved** listings and submit new ones (not approved, only the form's own fields). Nobody can edit, delete or approve through the public key. Field lengths are capped. At most 30 submissions an hour across the site. Tested against Postgres with the `anon` role. |
-| Moderation | New listings are hidden until you set `approved = true`. The Featured spotlight only shows businesses where you set `promoted = true`. |
-| Demo features | Accounts, messages and reviews are kept only in the visitor's browser and say so. Messaging a real listing shows its contact details instead of pretending to send. |
-| Browser | `vercel.json` sets a strict Content-Security-Policy (scripts only from this site, connections only to this site and your Supabase project), HSTS, no framing, `nosniff`, `Referrer-Policy` and `Permissions-Policy`. All scripts are files; there are no inline scripts. |
-| Third parties | No outside scripts at all: the site talks to Supabase with plain `fetch` (`js/api.js`), and fonts are self-hosted. No analytics. |
-| Escaping | Every listing field is escaped before it's shown, so a listing can't inject code. |
-| Published files | `.vercelignore` keeps `server/`, `docs/`, `supabase/` and Markdown files off the website. |
-| Legal | `privacy.html` and `terms.html`, linked from the footer and both forms. |
+| Reading | Anyone can read only `live` listings and reviews. You also see your own pending ones. Admins (emails in `admins`) see everything. The page also only asks for live rows. |
+| Posting | Goes through the `submit-post` Edge Function, which checks the text and decides `live` or `pending`. Anything inserted straight into the database by a normal user is forced to `pending` and owned by that user. |
+| Editing | Owners can only change `menu`, `policy`, `photos` and `avatar`. New pictures send the listing back to `pending`. Name, description, contact, status and `promoted` can only be changed by an admin or the service role. |
+| Pictures | Bucket `listing-photos`: JPG/PNG/WebP, 2 MB max, each user can only upload into a folder named after their own user id. The site only shows pictures from this bucket. Admins see every picture before it goes live. |
+| Reviews | Logged-in users only, one per business, never your own business. |
+| Reports | Any logged-in user can send one. Only admins can read or clear them. |
+| Accounts | Supabase Auth with an emailed code to confirm the address and to reset the password. Users can delete their account (Edge Function `delete-account`). |
+| Browser | `vercel.json` sends a strict Content-Security-Policy: scripts only from this site (Supabase's library is copied into `js/vendor/`, pinned to 2.119.0), fonts from this site, pictures from this site or our Supabase bucket, no framing. No third-party trackers. |
 
-## Owner set-up
+## Setup checklist
 
-1. **Supabase → SQL Editor:** paste and run `supabase/security.sql`, then run the two check queries at the bottom. RLS should be on, with only the four policies.
-   This hides the 8 example listings, which aren't real businesses. Approve only real listings.
-2. **Supabase → Settings → API:** never put the `service_role` or `sb_secret_…` key in the website or GitHub. If one ever was, rotate it.
-3. **Supabase → Authentication → Providers:** turn off sign-ups, since the site doesn't use Supabase accounts.
-4. **Supabase → Database → Backups:** automatic daily backups need the Pro plan. Either upgrade, or export the two tables regularly (Table Editor → Export to CSV).
-5. **Supabase → Settings → General:** note your region and put it in `privacy.html` (the one yellow placeholder).
-6. **Supabase → Reports / Logs:** check for unusual numbers of inserts. Set a spend cap (Billing → Spend cap on).
-7. **Vercel:** keep Deployment Protection on for Preview deployments. Set a spend limit if you're on Pro.
+1. **Supabase → SQL Editor:** run `supabase/security.sql` and the quick checks at the bottom of it.
+2. **Supabase → Authentication → Emails → SMTP settings:** add your own SMTP (for example Resend, Brevo or Postmark). Supabase's built-in email is only for testing and sends very few emails an hour.
+3. **Supabase → Authentication → Email templates:** "Confirm signup" and "Reset password" must contain `{{ .Token }}` (the 6-digit code), because the site asks for the code rather than a link.
+4. **Supabase → Edge Functions → submit-post:** check it uses the service role key. If it doesn't, posting still works but everything lands as `pending`.
+5. Fill in the Supabase region in `privacy.html` (the yellow placeholder).
 
-## Approving and removing listings
+## Admin jobs
 
 ```sql
-select id, name, what, contact, created_at from public.businesses where not approved order by created_at desc;
-update public.businesses set approved = true where id = 123;
-delete from public.businesses where id = 123;   -- spam, or the owner asked
+-- see what is waiting (also shown in the site's Admin panel)
+select id, name, what, flag_reason, created_at from public.businesses where status = 'pending' order by created_at;
+-- approve / hide
+update public.businesses set status = 'live', flag_reason = null where id = 123;
+update public.businesses set status = 'pending' where id = 123;
+-- make a business Sponsored in the spotlight (always labelled "Sponsored")
+update public.businesses set promoted = true where id = 123;
 ```
-
-The same queries work for `public.societies`.
 
 ## If something goes wrong
 
-1. **Spam or a bad listing is showing:** `update … set approved = false where id = …` hides it at once.
-2. **Being flooded:** in Supabase → Table Editor, temporarily remove the "anyone can submit" policies, or lower the 30 in the throttle function.
-3. **A secret key leaked:** Supabase → Settings → API → roll the key, then check the logs.
-4. **Take the site down:** Vercel → Deployments → Instant Rollback, or a Firewall rule that blocks all traffic.
-5. **Personal data exposed:** if it's likely to harm people, report it to the ICO within 72 hours (ico.org.uk) and tell those affected.
-
-## Monthly
-
-- Review waiting and approved listings.
-- Check Supabase usage and logs.
-- Export a backup.
-
-## Not yet possible on this branch
-
-There's no server, so there's no bot check (CAPTCHA) and no per-person rate limit on submissions. The approval step and the 30-an-hour cap are what stop spam. Real accounts, messaging and reviews need a backend. The `ui-rework` branch has one, with secure sessions, email confirmation, password reset and rate limits.
+1. **A bad listing is showing:** set its status to `pending` (above) or remove it in the Admin panel.
+2. **Spam flood:** temporarily turn off new sign-ups in Supabase → Authentication → Providers → Email.
+3. **A key leaked:** the publishable key is public anyway. If the service role key or a database password leaks, rotate it in Supabase → Settings → API, then update the Edge Function secrets.

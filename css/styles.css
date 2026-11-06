@@ -762,3 +762,9 @@ textarea{resize:vertical;min-height:84px}
 .ltable{width:100%;border-collapse:collapse;margin:10px 0 16px;font-size:15px}
 .ltable th,.ltable td{text-align:left;padding:10px;border-bottom:2px solid var(--line);vertical-align:top}
 mark.todo{background:var(--butter);color:var(--onpop);padding:0 4px;border-radius:4px;font-weight:700}
+
+/* ===== Static pages (how it works, privacy, terms): simple header and footer, no scripts ===== */
+.sbar .pill{padding:8px 8px 8px 20px}
+.flinks{display:flex;flex-wrap:wrap;gap:6px 18px;margin:4px 0}
+.flinks a{font-weight:600;font-size:15px;text-decoration:underline;text-underline-offset:3px;padding:4px 0}
+.flinks a[aria-current="page"]{text-decoration-thickness:3px;text-decoration-color:var(--pink)}
