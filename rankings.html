@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script src="js/theme-boot.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Rankings | the Board</title>
+<meta name="description" content="The top rated student businesses this week and of all time.">
+<link rel="preload" href="fonts/instrument-sans-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<script src="js/vendor/supabase-2.119.0.js" defer></script>
+<script src="js/core.js" defer></script>
+<script src="js/rankings.js" defer></script>
+<link rel="stylesheet" href="css/board.css">
+</head>
+<body data-page="rankings">
+
+<header id="site-header"></header>
+
+<main id="top" class="wrap rpage">
+  <h1>Rankings</h1>
+  <p class="lede">The best rated student businesses on the Board.</p>
+  <div class="rtabs" id="rk-tabs" role="tablist" aria-label="Time period">
+    <button type="button" role="tab" id="t-week" data-view="week" aria-controls="rk" aria-selected="true">Top this week</button>
+    <button type="button" role="tab" id="t-all" data-view="all" aria-controls="rk" aria-selected="false" tabindex="-1">All time</button>
+  </div>
+  <p class="hint" id="rk-note"></p>
+  <div class="rklist" id="rk" role="tabpanel" aria-live="polite"><p class="hint">Loading…</p></div>
+</main>
+
+<footer id="site-footer"></footer>
+
+<noscript><div class="wrap" style="padding-block:24px">The Board needs JavaScript for this page.</div></noscript>
+</body>
+</html>

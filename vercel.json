@@ -37,11 +37,6 @@
   ],
   "redirects": [
     {
-      "source": "/messages.html",
-      "destination": "/",
-      "permanent": false
-    },
-    {
       "source": "/profile.html",
       "destination": "/",
       "permanent": false
